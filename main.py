@@ -1,7 +1,7 @@
 from machine import Pin
 from time import sleep
 from neopixel import NeoPixel
-from mod_bounce import Bounce
+from mod_raybouncer import Bounce
 
 # 0 - 255
 intense = 8
