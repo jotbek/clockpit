@@ -43,7 +43,7 @@ class Clock:
         for i in range(len(bit_array)):
             if bit_array[i] == 1:
                 for xycoords in self.bars[i]:
-                    changes.append([xycoords[0], xycoords[1], [128, 0, 0]])
+                    changes.append([xycoords[0], xycoords[1], [128 if digit % 2 == 0 else 0, 128 if digit % 3 else 0, 128 if digit % 7 else 0]])
             
         return changes
         

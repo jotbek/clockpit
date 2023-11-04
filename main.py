@@ -6,7 +6,7 @@ from mod_clock import Clock
 
 
 # 0 - 255
-intense = 8
+intense = 4
 xres = 16
 yres = 16
 pin = 22
@@ -28,7 +28,8 @@ def light(x, y, r, g, b):
 def clear_board():
     for y in range(yres):
         for x in range(xres):
-            light(x, y, 0, 0, 0)
+            if wall[mapPixel(x, y)] != (0, 0 ,0):
+                light(x, y, 0, 0, 0)
 
 mod = Bounce(xres, yres, 10, [[0, 0, 128], [128, 0, 0]])
 mod = Clock()
@@ -43,7 +44,7 @@ while True:
         light(ch[0], ch[1], ch[2][0], ch[2][1], ch[2][2])
 
     wall.write()
-    sleep(.5)
+    sleep(0.5)
     
     i += 1
     if i == 10:
