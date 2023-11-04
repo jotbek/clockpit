@@ -24,16 +24,28 @@ def mapPixel(x, y):
 def light(x, y, r, g, b):
     wall[mapPixel(x, y)] = (int(intense*r/255), int(intense*g/255), int(intense*b/255))
 
-mod = Bounce(xres, yres, 10, [[0, 0, 128], [128, 0, 0]])
-# mod = Clock()
 
+def clear_board():
+    for y in range(yres):
+        for x in range(xres):
+            light(x, y, 0, 0, 0)
+
+mod = Bounce(xres, yres, 10, [[0, 0, 128], [128, 0, 0]])
+mod = Clock()
+
+i = 0
 while True:
-    changes = mod.get()
+    clear_board()
+    changes = mod.get(i)
     print(changes)
     
     for ch in changes:
         light(ch[0], ch[1], ch[2][0], ch[2][1], ch[2][2])
 
     wall.write()
-    sleep(0.08)
+    sleep(.5)
+    
+    i += 1
+    if i == 10:
+        i = 0
 
