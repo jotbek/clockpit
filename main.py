@@ -32,12 +32,12 @@ def clear_board():
                 light(x, y, 0, 0, 0)
 
 mod = Bounce(xres, yres, 10, [[0, 0, 128], [128, 0, 0]])
-mod = Clock()
+# mod = Clock()
 
 i = 0
 while True:
     clear_board()
-    changes = mod.get(i)
+    changes = mod.get()
     print(changes)
     
     for ch in changes:

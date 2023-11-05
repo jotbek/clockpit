@@ -35,7 +35,7 @@ class Clock:
 
 
     def get(self, digit):
-        changes = []        
+        changes = []
 
         digit_def = self.digits[digit]        
         bit_array = [digit_def >> i & 1 for i in range(0, 8)]                  
@@ -46,7 +46,36 @@ class Clock:
                     changes.append([xycoords[0], xycoords[1], [128 if digit % 2 == 0 else 0, 128 if digit % 3 else 0, 128 if digit % 7 else 0]])
             
         return changes
-        
+    
+
+    def get_number(self, number, min_forced_lenght = 0):
+        changes = []
+        str_number = str(number)
+        no_digits = len(str_number)
+
+        if min_forced_lenght != 0 and min_forced_lenght > no_digits:
+            str_number = self.insert_str(str_number, "0" * (min_forced_lenght - no_digits), 0)
+            no_digits = min_forced_lenght
+
+
+    def get_digit(self, digit):
+        changes = []
+        if (digit < 0 or digit > 9):
+            return changes
+
+        digit_def = self.digits[digit]        
+        bit_array = [digit_def >> i & 1 for i in range(0, 8)]                  
+            
+        for i in range(len(bit_array)):
+            if bit_array[i] == 1:
+                for xycoords in self.bars[i]:
+                    changes.append([xycoords[0], xycoords[1], [128 if digit % 2 == 0 else 0, 128 if digit % 3 else 0, 128 if digit % 7 else 0]])
+            
+        return changes
+    
+
+    def insert_str(self, source_str, insert_str, pos):
+        return source_str[:pos] + insert_str + source_str[pos:]
         
 
 
