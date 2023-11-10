@@ -20,12 +20,14 @@
 
 import math
 import random
+import time
+from machine import RTC
 
 
 class Clock:
-    dev_hh = 0
-    dev_mm = 0
-    dev_ss = 0
+    time_h = 0
+    time_m = 0
+    time_s = 0
     hh_color = [0, 0, 255]
     mm_color = [0, 255, 0]
     clear_color = [0, 0, 0]
@@ -51,19 +53,16 @@ class Clock:
     def get(self):
         changes = []
             
-        changes.extend(self.get_number(self.dev_hh, rgb=self.clear_color, x_shift=2, y_shift=2, min_forced_lenght=2))
-        changes.extend(self.get_number(self.dev_mm, rgb=self.clear_color, x_shift=7, y_shift=9, min_forced_lenght=2))
+        changes.extend(self.get_number(self.time_h, rgb=self.clear_color, x_shift=2, y_shift=2, min_forced_lenght=2))
+        changes.extend(self.get_number(self.time_m, rgb=self.clear_color, x_shift=7, y_shift=9, min_forced_lenght=2))
                         
-        self.dev_mm += 1
-        if self.dev_mm == 60:
-            self.dev_mm = 0
-            self.dev_hh += 1
-            if self.dev_hh == 60:
-                self.dev_hh = 0
+        self.time_h = time.localtime()[3] + 1
+        self.time_m = time.localtime()[4]
+        self.time_s = time.localtime()[5]                
 
         changes.extend(self.get_background_3())
-        changes.extend(self.get_number(self.dev_hh, rgb=self.hh_color, x_shift=2, y_shift=2, min_forced_lenght=2))
-        changes.extend(self.get_number(self.dev_mm, rgb=self.mm_color, x_shift=7, y_shift=9, min_forced_lenght=2))
+        changes.extend(self.get_number(self.time_h, rgb=self.hh_color, x_shift=2, y_shift=2, min_forced_lenght=2))
+        changes.extend(self.get_number(self.time_m, rgb=self.mm_color, x_shift=7, y_shift=9, min_forced_lenght=2))
         
         return changes
                                   
@@ -188,7 +187,7 @@ class Clock:
             changes.append([int(self.bckg3_x), int(self.bckg3_y), [self.bckg3_r, self.bckg3_g, self.bckg3_b]])
                 
         radius = 12
-        sec = self.dev_mm - 15
+        sec = self.time_s - 15
         
         i = 2 * math.pi * (sec / 60)
         self.bckg3_x = (self.xres - 1) / 2 + math.cos(i) * radius

@@ -3,6 +3,7 @@ from time import sleep
 from neopixel import NeoPixel
 from mod_raybouncer import Bounce
 from mod_clock import Clock
+import settime
 
 
 # 0 - 255
@@ -32,6 +33,11 @@ def clear_board():
                 light(x, y, 0, 0, 0)
 
 
+
+# setup actual time from NTP server
+settime.run()
+
+# MODULES:
 # mod = Bounce(xres, yres)
 mod = Clock(xres, yres)
 
