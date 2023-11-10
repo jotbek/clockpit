@@ -56,7 +56,7 @@ class Clock:
         changes.extend(self.get_number(self.time_h, rgb=self.clear_color, x_shift=2, y_shift=2, min_forced_lenght=2))
         changes.extend(self.get_number(self.time_m, rgb=self.clear_color, x_shift=7, y_shift=9, min_forced_lenght=2))
                         
-        self.time_h = time.localtime()[3] + 1
+        self.time_h = time.localtime()[3] + 1   # Central Europe timezone
         self.time_m = time.localtime()[4]
         self.time_s = time.localtime()[5]                
 
@@ -196,6 +196,6 @@ class Clock:
         self.bckg3_x = min(self.bckg3_x, self.xres - 1) if self.bckg3_x > self.xres else max(self.bckg3_x, 0)
         self.bckg3_y = min(self.bckg3_y, self.yres - 1) if self.bckg3_y > self.yres else max(self.bckg3_y, 0)               
         
-        changes.append([int(self.bckg3_x), int(self.bckg3_y), [128, 64, 64]])
+        changes.append([int(self.bckg3_x), int(self.bckg3_y), [128, 128, 128]])
         
         return changes
