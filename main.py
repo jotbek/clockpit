@@ -37,7 +37,6 @@ mod = Clock(xres, yres)
 
 i = 0
 while True:
-    clear_board()
     changes = mod.get()
     
     for ch in changes:

@@ -19,13 +19,16 @@
 # 9 => 0,1,2,3,5,6 => 01101111
 
 import math
+import random
 
 
 class Clock:
     dev_hh = 0
     dev_mm = 0
+    dev_ss = 0
     hh_color = [0, 0, 255]
     mm_color = [0, 255, 0]
+    clear_color = [0, 0, 0]
     
     xres = 0
     yres = 0
@@ -48,6 +51,9 @@ class Clock:
     def get(self):
         changes = []
             
+        changes.extend(self.get_number(self.dev_hh, rgb=self.clear_color, x_shift=2, y_shift=2, min_forced_lenght=2))
+        changes.extend(self.get_number(self.dev_mm, rgb=self.clear_color, x_shift=7, y_shift=9, min_forced_lenght=2))
+                        
         self.dev_mm += 1
         if self.dev_mm == 60:
             self.dev_mm = 0
@@ -55,9 +61,9 @@ class Clock:
             if self.dev_hh == 60:
                 self.dev_hh = 0
 
-        changes = self.get_background_2()
-        changes.extend(self.get_number(self.dev_hh, rgb=self.hh_color, x_shift=1, y_shift=3, min_forced_lenght=2))
-        changes.extend(self.get_number(self.dev_mm, rgb=self.mm_color, x_shift=8, y_shift=8, min_forced_lenght=2))
+        changes.extend(self.get_background_3())
+        changes.extend(self.get_number(self.dev_hh, rgb=self.hh_color, x_shift=2, y_shift=2, min_forced_lenght=2))
+        changes.extend(self.get_number(self.dev_mm, rgb=self.mm_color, x_shift=7, y_shift=9, min_forced_lenght=2))
         
         return changes
                                   
@@ -115,23 +121,79 @@ class Clock:
         return changes
     
     
-    bckg2_x = -1
+    bckg2_xy = -1
     bckg2_direction = 1
     def get_background_2(self):        
         changes = []
-        if self.bckg2_x + self.bckg2_direction == self.xres or self.bckg2_x + self.bckg2_direction < 0:
+        
+        if self.bckg2_xy != -1:
+            for y in range(self.yres):
+                changes.append([self.bckg2_xy, y, [0, 0, 0]])
+            
+            for x in range(self.xres):
+                changes.append([x, self.bckg2_xy, [0, 0, 0]])
+        
+        if self.bckg2_xy + self.bckg2_direction == self.xres or self.bckg2_xy + self.bckg2_direction < 0:
             self.bckg2_direction *= -1
 
-        self.bckg2_x += self.bckg2_direction
+        self.bckg2_xy += self.bckg2_direction
         
         for y in range(self.yres):
-            changes.append([self.bckg2_x, y, [64, 64, 64]])
+            changes.append([self.bckg2_xy, y, [64, 64, 32]])
+        
+        for x in range(self.xres):
+            changes.append([x, self.bckg2_xy, [64, 64, 32]])
         
         return changes
-            
-            
+    
 
-            
-
-
-# a = [int(i) for i in "{0:08b}".format(c)]
+    bckg3_x = -1
+    bckg3_y = -1
+    bckg3_r = 0
+    bckg3_g = 0
+    bckg3_b = 0
+    bckg3_rd = 1
+    bckg3_gd = 1
+    bckg3_bd = 1
+    def get_background_3(self):
+        changes = []
+                
+        # fading clock borders
+        step_color = 5
+        max_color = 60
+        rnd = random.randint(0, 3)
+        if rnd == 0:
+            if self.bckg3_r + step_color * self.bckg3_rd > max_color:
+                self.bckg3_rd = -1                 
+            elif self.bckg3_r + step_color * self.bckg3_rd < 0:
+                self.bckg3_rd = 1
+            self.bckg3_r += step_color * self.bckg3_rd       
+        elif rnd == 1:
+            if self.bckg3_g + step_color * self.bckg3_gd > max_color:
+                self.bckg3_gd = -1                 
+            elif self.bckg3_g + step_color * self.bckg3_gd < 0:
+                self.bckg3_gd = 1
+            self.bckg3_g += step_color * self.bckg3_gd                        
+        elif rnd == 2:
+            if self.bckg3_b + step_color * self.bckg3_bd > max_color:
+                self.bckg3_bd = -1                 
+            elif self.bckg3_b + step_color * self.bckg3_bd < 0:
+                self.bckg3_bd = 1
+            self.bckg3_b += step_color * self.bckg3_bd     
+        
+        if (self.bckg3_x != -1):
+            changes.append([int(self.bckg3_x), int(self.bckg3_y), [self.bckg3_r, self.bckg3_g, self.bckg3_b]])
+                
+        radius = 12
+        sec = self.dev_mm - 15
+        
+        i = 2 * math.pi * (sec / 60)
+        self.bckg3_x = (self.xres - 1) / 2 + math.cos(i) * radius
+        self.bckg3_y = (self.yres - 1) / 2 + math.sin(i) * radius
+        
+        self.bckg3_x = min(self.bckg3_x, self.xres - 1) if self.bckg3_x > self.xres else max(self.bckg3_x, 0)
+        self.bckg3_y = min(self.bckg3_y, self.yres - 1) if self.bckg3_y > self.yres else max(self.bckg3_y, 0)               
+        
+        changes.append([int(self.bckg3_x), int(self.bckg3_y), [128, 64, 64]])
+        
+        return changes
