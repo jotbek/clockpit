@@ -32,7 +32,7 @@ def clear_board():
                 light(x, y, 0, 0, 0)
 
 
-# mod = Bounce(xres, yres, 10, [[0, 0, 128], [128, 0, 0]])
+# mod = Bounce(xres, yres)
 mod = Clock(xres, yres)
 
 i = 0

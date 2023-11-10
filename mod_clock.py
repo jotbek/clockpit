@@ -106,6 +106,7 @@ class Clock:
 
     bckg1_a0 = 0
     bckg1_a1 = 1
+    # getting out of memory
     def get_background_1(self):
         changes = []        
         self.bckg1_a0 += 0.1
@@ -123,6 +124,7 @@ class Clock:
     
     bckg2_xy = -1
     bckg2_direction = 1
+    # simple moving lines
     def get_background_2(self):        
         changes = []
         
@@ -155,6 +157,7 @@ class Clock:
     bckg3_rd = 1
     bckg3_gd = 1
     bckg3_bd = 1
+    # fading sec borders
     def get_background_3(self):
         changes = []
                 

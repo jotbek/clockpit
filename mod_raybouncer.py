@@ -2,9 +2,10 @@ import random
 
 class Bounce:
     bouncers = []
-    def __init__(self, max_x, max_y, fading, bouncers):
+    def __init__(self, max_x, max_y):
+        bouncers = [[0, 0, 128], [128, 0, 0]]
         for b in bouncers:
-            self.bouncers.append(BounceOne(max_x, max_y, fading, b))
+            self.bouncers.append(BounceOne(max_x, max_y, 10, b))
 
 
     def get(self):
