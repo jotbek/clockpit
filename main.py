@@ -5,6 +5,7 @@ from mod_raybouncer import Bounce
 from mod_clock import Clock
 from mod_santatree_16x16 import Santree
 import settime
+import random
 
 
 # 0 - 255
@@ -39,9 +40,13 @@ def clear_board():
 settime.run()
 
 # MODULES:
-# mod = Bounce(xres, yres)
-# mod = Clock(xres, yres)
-mod = Santree(xres, yres)
+rnd = random.randint(0, 3)
+if rnd == 0:
+    mod = Bounce(xres, yres)
+elif rnd == 1:
+    mod = Santree(xres, yres)
+else:
+    mod = Clock(xres, yres)    
 
 i = 0
 while True:
