@@ -40,7 +40,9 @@ def clear_board():
 settime.run()
 
 # MODULES:
-rnd = random.randint(0, 3)
+rnd = random.randrange(0, 3)
+print(rnd)
+
 if rnd == 0:
     mod = Bounce(xres, yres)
 elif rnd == 1:

@@ -65,7 +65,7 @@ class Santree:
 				if self.initialized == False:
 					changes.append([y, x, self.colors[self.tree[x][y]][0]])
 				elif no_colors > 1:
-					changes.append([y, x, self.colors[self.tree[x][y]][random.randint(0, no_colors - 1)]])
+					changes.append([y, x, self.colors[self.tree[x][y]][random.randrange(0, no_colors)]])
 		
 		# set initialization flag
 		self.initialized = True
