@@ -3,6 +3,7 @@ from time import sleep
 from neopixel import NeoPixel
 from mod_raybouncer import Bounce
 from mod_clock import Clock
+from mod_santatree_16x16 import Santree
 import settime
 
 
@@ -39,7 +40,8 @@ settime.run()
 
 # MODULES:
 # mod = Bounce(xres, yres)
-mod = Clock(xres, yres)
+# mod = Clock(xres, yres)
+mod = Santree(xres, yres)
 
 i = 0
 while True:

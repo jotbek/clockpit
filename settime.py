@@ -10,8 +10,6 @@ from machine import RTC
 NTP_DELTA = 2208988800
 host = "pool.ntp.org"
 
-led = Pin("LED", Pin.OUT)
-
 ssid = secrets.wifi_name
 password = secrets.wifi_pass
 
@@ -35,15 +33,17 @@ def set_time():
 def run():
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
+    print(wlan.scan())
     wlan.connect(ssid, password)
 
-    max_wait = 10
+    max_wait = 20
     while max_wait > 0:
-        if wlan.status() < 0 or wlan.status() >= 3:
+        wlan_status = wlan.status()
+        if  wlan_status < 0 or wlan_status >= 3:
             break
         max_wait -= 1
-        print('waiting for connection...')
-        time.sleep(1)
+        print('Attemts left: ', max_wait, ' | Wlan status: ', wlan_status, ' | Waiting for connection to ', secrets.wifi_name)
+        time.sleep(2)
 
     if wlan.status() != 3:
         raise RuntimeError('network connection failed')
@@ -52,7 +52,5 @@ def run():
         status = wlan.ifconfig()
         print( 'ip = ' + status[0] )
 
-    led.on()
     set_time()
-    print(time.localtime())
-    led.off()
+    print("Local time fetched from NTP sever. Onboard RTC set to: ", time.localtime())
