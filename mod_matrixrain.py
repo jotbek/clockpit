@@ -33,7 +33,7 @@ class MatrixRain:
                 if y < self.yres - 1:
                     self.map[x][y + 1] = self.map[x][y]
                     
-                if self.map[x][y] != [0, 0, 0] and self.map[x][y][0] != 0 and self.map[x][y][2] != 0:
+                if self.map[x][y][0] != 0 or self.map[x][y][2] != 0:
                     # reduce the r, b colors
                     self.map[x][y] = [max(self.map[x][y][0] - self.rb_reduction, 0), self.g, max(self.map[x][y][2] - self.rb_reduction, 0)]  
                 elif self.map[x][y][1] != 0:
