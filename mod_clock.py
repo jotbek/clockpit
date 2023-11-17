@@ -60,7 +60,7 @@ class Clock:
         self.time_m = time.localtime()[4]
         self.time_s = time.localtime()[5]                
 
-        changes.extend(self.get_background_3())
+        changes.extend(self.draw_seconds_pointer())
         changes.extend(self.get_number(self.time_h, rgb=self.hh_color, x_shift=2, y_shift=2, min_forced_lenght=2))
         changes.extend(self.get_number(self.time_m, rgb=self.mm_color, x_shift=7, y_shift=9, min_forced_lenght=2))
         
@@ -103,99 +103,122 @@ class Clock:
         return source_str[:pos] + insert_str + source_str[pos:]
         
 
-    bckg1_a0 = 0
-    bckg1_a1 = 1
+    b1_a0 = 0
+    b1_a1 = 1
     # getting out of memory
     def get_background_1(self):
         changes = []        
-        self.bckg1_a0 += 0.1
-        self.bckg1_a1 += 0.2        
+        self.b1_a0 += 0.1
+        self.b1_a1 += 0.2        
         
         for y in range(self.yres):
             for x in range(self.xres):
-                r = 128 + math.floor((math.sin(self.bckg1_a0 + x * 0.4) + math.cos(self.bckg1_a1 + y * 0.4)) * 63)
-                g = 128 + math.floor((math.sin(self.bckg1_a0 + y * 0.4) + math.cos(self.bckg1_a1 + x * 0.4)) * 63)
+                r = 128 + math.floor((math.sin(self.b1_a0 + x * 0.4) + math.cos(self.b1_a1 + y * 0.4)) * 63)
+                g = 128 + math.floor((math.sin(self.b1_a0 + y * 0.4) + math.cos(self.b1_a1 + x * 0.4)) * 63)
                 b = 255 - r
                 changes.append([x, y, [int(r / 2), int(g / 2), int(b / 2)]])
                 
         return changes
     
     
-    bckg2_xy = -1
-    bckg2_direction = 1
+    b2_xy = -1
+    b2_direction = 1
     # simple moving lines
     def get_background_2(self):        
         changes = []
         
-        if self.bckg2_xy != -1:
+        if self.b2_xy != -1:
             for y in range(self.yres):
-                changes.append([self.bckg2_xy, y, [0, 0, 0]])
+                changes.append([self.b2_xy, y, [0, 0, 0]])
             
             for x in range(self.xres):
-                changes.append([x, self.bckg2_xy, [0, 0, 0]])
+                changes.append([x, self.b2_xy, [0, 0, 0]])
         
-        if self.bckg2_xy + self.bckg2_direction == self.xres or self.bckg2_xy + self.bckg2_direction < 0:
-            self.bckg2_direction *= -1
+        if self.b2_xy + self.b2_direction == self.xres or self.b2_xy + self.b2_direction < 0:
+            self.b2_direction *= -1
 
-        self.bckg2_xy += self.bckg2_direction
+        self.b2_xy += self.b2_direction
         
         for y in range(self.yres):
-            changes.append([self.bckg2_xy, y, [64, 64, 32]])
+            changes.append([self.b2_xy, y, [64, 64, 32]])
         
         for x in range(self.xres):
-            changes.append([x, self.bckg2_xy, [64, 64, 32]])
+            changes.append([x, self.b2_xy, [64, 64, 32]])
         
         return changes
     
 
-    bckg3_x = -1
-    bckg3_y = -1
-    bckg3_r = 0
-    bckg3_g = 0
-    bckg3_b = 0
-    bckg3_rd = 1
-    bckg3_gd = 1
-    bckg3_bd = 1
+    b3_x = -1
+    b3_y = -1
+    b3_r = 0
+    b3_g = 0
+    b3_b = 0
+    b3_rd = 1
+    b3_gd = 1
+    b3_bd = 1
+    b3_map = {}
+    b3_fading = 0.5
+    b3_new_pix_rgb = [128, 128, 128]
     # fading sec borders
-    def get_background_3(self):
+    def draw_seconds_pointer(self):
         changes = []
                 
         # fading clock borders
-        step_color = 5
-        max_color = 60
+        step_color = 1
+        max_color = 80
         rnd = random.randint(0, 3)
         if rnd == 0:
-            if self.bckg3_r + step_color * self.bckg3_rd > max_color:
-                self.bckg3_rd = -1                 
-            elif self.bckg3_r + step_color * self.bckg3_rd < 0:
-                self.bckg3_rd = 1
-            self.bckg3_r += step_color * self.bckg3_rd       
+            if self.b3_r + step_color * self.b3_rd > max_color:
+                self.b3_rd = -1                 
+            elif self.b3_r + step_color * self.b3_rd < 0:
+                self.b3_rd = 1
+            self.b3_r += step_color * self.b3_rd       
         elif rnd == 1:
-            if self.bckg3_g + step_color * self.bckg3_gd > max_color:
-                self.bckg3_gd = -1                 
-            elif self.bckg3_g + step_color * self.bckg3_gd < 0:
-                self.bckg3_gd = 1
-            self.bckg3_g += step_color * self.bckg3_gd                        
+            if self.b3_g + step_color * self.b3_gd > max_color:
+                self.b3_gd = -1                 
+            elif self.b3_g + step_color * self.b3_gd < 0:
+                self.b3_gd = 1
+            self.b3_g += step_color * self.b3_gd                        
         elif rnd == 2:
-            if self.bckg3_b + step_color * self.bckg3_bd > max_color:
-                self.bckg3_bd = -1                 
-            elif self.bckg3_b + step_color * self.bckg3_bd < 0:
-                self.bckg3_bd = 1
-            self.bckg3_b += step_color * self.bckg3_bd     
+            if self.b3_b + step_color * self.b3_bd > max_color:
+                self.b3_bd = -1                 
+            elif self.b3_b + step_color * self.b3_bd < 0:
+                self.b3_bd = 1
+            self.b3_b += step_color * self.b3_bd     
         
-        if (self.bckg3_x != -1):
-            changes.append([int(self.bckg3_x), int(self.bckg3_y), [self.bckg3_r, self.bckg3_g, self.bckg3_b]])
+        x = int(self.b3_x)
+        y = int(self.b3_y)
+        
+        if (x != -1):
+            changes.append([x, y, [self.b3_r, self.b3_g, self.b3_b]])
+            self.b3_map[(x, y)] = [self.b3_r, self.b3_g, self.b3_b]
                 
+        # fade out the colors
+        for key, value in self.b3_map.items():
+            if value != [0, 0, 0]:
+                rgb = self.b3_map[key]
+                self.b3_map[key] = [max(rgb[0] - self.b3_fading, 0), max(rgb[1] - self.b3_fading, 0), max(rgb[2] - self.b3_fading, 0)]
+                changes.append([key[0], key[1], [int(self.b3_map[key][0]), int(self.b3_map[key][1]), int(self.b3_map[key][2])]])                      
+        
+        # clean dictionary from 0,0,0 values
+        for key in list(self.b3_map.keys()):
+            if self.b3_map[key] == [0, 0, 0]:
+                del self.b3_map[key]
+        
         radius = 12
         sec = self.time_s - 15
         
         i = 2 * math.pi * (sec / 60)
-        self.bckg3_x = (self.xres - 1) / 2 + math.cos(i) * radius
-        self.bckg3_y = (self.yres - 1) / 2 + math.sin(i) * radius
+        self.b3_x = (self.xres - 1) / 2 + math.cos(i) * radius
+        self.b3_y = (self.yres - 1) / 2 + math.sin(i) * radius
         
-        self.bckg3_x = min(self.bckg3_x, self.xres - 1) if self.bckg3_x > self.xres else max(self.bckg3_x, 0)
-        self.bckg3_y = min(self.bckg3_y, self.yres - 1) if self.bckg3_y > self.yres else max(self.bckg3_y, 0)               
+        self.b3_x = min(self.b3_x, self.xres - 1) if self.b3_x > self.xres else max(self.b3_x, 0)
+        self.b3_y = min(self.b3_y, self.yres - 1) if self.b3_y > self.yres else max(self.b3_y, 0)               
         
-        changes.append([int(self.bckg3_x), int(self.bckg3_y), [128, 128, 128]])
+        x = int(self.b3_x)
+        y = int(self.b3_y)
+        
+        changes.append([x, y, self.b3_new_pix_rgb])
+        self.b3_map[(x, y)] = self.b3_new_pix_rgb
         
         return changes
