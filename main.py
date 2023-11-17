@@ -41,17 +41,17 @@ def clear_board():
 settime.run()
 
 # MODULES:
-# rnd = random.randrange(0, 3)
-# print(rnd)
+rnd = random.randrange(0, 4)
+print(rnd)
 
-# if rnd == 0:
-#     mod = Bounce(xres, yres)
-# elif rnd == 1:
-#     mod = Santree(xres, yres)
-# else:
-#     mod = Clock(xres, yres)
-
-mod = MatrixRain(xres, yres)
+if rnd == 0:
+    mod = Bounce(xres, yres)
+elif rnd == 1:
+    mod = Santree(xres, yres)
+elif rnd == 2:
+    mod = Clock(xres, yres)
+elif rnd == 3:
+    mod = MatrixRain(xres, yres)
 
 i = 0
 while True:

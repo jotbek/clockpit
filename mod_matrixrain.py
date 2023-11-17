@@ -42,26 +42,4 @@ class MatrixRain:
                 
                 changes.append([x, y, self.map[x][y]])
         
-        # print(changes)
         return changes
-                
-
-# class Fly:
-#     body = []
-#     min_fly_len = 3
-#     max_fly_len = 10
-#     r = 115
-#     g = 128
-#     b = 115
-#     head_xy = []
-    
-#     def __init__(self):
-#         self.body = self.generate_body(random.randrange(self.min_fly_len, self.max_fly_len + 1))
-        
-#     def generate_body(self, fly_len):
-#         body = [0, 0, 0] * fly_len
-#         for i in range(0, fly_len):
-#             body[i] = [int(max(self.r - i * (self.r / fly_len), 0)), self.g, int(max(self.b - i * (self.b / fly_len), 0))]        
-#         return body
-    
-    
