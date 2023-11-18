@@ -10,7 +10,7 @@ import random
 
 
 # 0 - 255
-intense = 16
+intense = 255
 xres = 16
 yres = 16
 pin = 22
@@ -38,7 +38,10 @@ def clear_board():
 
 
 # setup actual time from NTP server
-settime.run()
+try:
+    settime.run()
+except RuntimeError:
+    print("Could not connect to wifi network")
 
 # MODULES:
 rnd = random.randrange(0, 4)

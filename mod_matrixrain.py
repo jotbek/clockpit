@@ -4,9 +4,9 @@ import random
 class MatrixRain:
     xres = 0
     yres = 0
-    r = 115
-    g = 128
-    b = 115
+    r = 230
+    g = 255
+    b = 230
     map = []
     rb_reduction = 30
     g_reduction = 10
