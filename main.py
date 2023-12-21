@@ -12,7 +12,7 @@ from mod_matrixrain import MatrixRain
 
 # LED matrix configuration
 intense = 255 # 0 - 255
-intense_step = 7
+intense_step = 5
 xres = 16
 yres = 16
 ledControlPin = 22
@@ -45,6 +45,15 @@ def clear_board():
             if wall[mapPixel(x, y)] != (0, 0 ,0):
                 light(x, y, 0, 0, 0)
 
+def blink(r, g, b, s):
+    for y in range(yres):
+        for x in range(xres):
+            light(x, y, r, g, b)
+    
+    wall.write()                
+    print("blink")
+    sleep(s)
+    clear_board()
 
 
 # setup actual time from NTP server
@@ -79,6 +88,11 @@ while True:
     if modeButton.value() is 0:
         mode = 0 if mode == 1 else 1
         print("mode: ", mode, " | selected module: ", selected_module, " | intense", intense)
+        
+        if mode == 0:
+            blink(0, 255, 0, 0.1)
+        elif mode == 1:
+            blink(0, 0, 255, 0.1)
 
     changes = modules[selected_module].get()
     
