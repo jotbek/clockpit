@@ -1,21 +1,31 @@
 from machine import Pin
 from time import sleep
 from neopixel import NeoPixel
+import settime
+import random
+
 from mod_raybouncer import Bounce
 from mod_clock import Clock
 from mod_santatree_16x16 import Santree
 from mod_matrixrain import MatrixRain
-import settime
-import random
 
 
-# 0 - 255
-intense = 255
+# LED matrix configuration
+intense = 255 # 0 - 255
+intense_step = 7
 xres = 16
 yres = 16
-pin = 22
-wall = NeoPixel(Pin(pin), xres * yres)
+ledControlPin = 22
+wall = NeoPixel(Pin(ledControlPin), xres * yres)
 wall.write()
+
+# MODULES:
+modules = [Clock(xres, yres), Bounce(xres, yres), Santree(xres, yres), MatrixRain(xres, yres)]
+
+# BUTTONS configuration
+plusButton = Pin(15, Pin.IN, Pin.PULL_UP)
+minusButton = Pin(8, Pin.IN, Pin.PULL_UP)
+modeButton = Pin(4, Pin.IN, Pin.PULL_UP)
 
 
 def mapPixel(x, y):
@@ -26,7 +36,7 @@ def mapPixel(x, y):
 
 
 def light(x, y, r, g, b):
-    wall[mapPixel(x, y)] = (int(intense*r/255), int(intense*g/255), int(intense*b/255))
+    wall[mapPixel(x, y)] = (int(r*(intense/255)), int(g*(intense/255)), int(b*(intense/255)))
 
 
 def clear_board():
@@ -43,30 +53,38 @@ try:
 except RuntimeError:
     print("Could not connect to wifi network")
 
-# MODULES:
-rnd = random.randrange(0, 4)
-print(rnd)
+print('test1')
+selected_module = 0
+mode = 0
 
-if rnd == 0:
-    mod = Bounce(xres, yres)
-elif rnd == 1:
-    mod = Santree(xres, yres)
-elif rnd == 2:
-    mod = Clock(xres, yres)
-elif rnd == 3:
-    mod = MatrixRain(xres, yres)
-
-i = 0
 while True:
-    changes = mod.get()
+    if plusButton.value() is 0:
+        if mode == 0:
+            selected_module += 0 if selected_module == len(modules) - 1 else 1
+            clear_board()
+            print("mode: ", mode, " | selected module: ", selected_module, " | intense", intense)
+        elif mode == 1:
+            intense = min(255, intense + intense_step)
+            print("mode: ", mode, " | selected module: ", selected_module, " | intense", intense)
+    
+    if minusButton.value() is 0:
+        if mode == 0:
+            selected_module -= 0 if selected_module <= 0 else 1
+            clear_board()
+            print("mode: ", mode, " | selected module: ", selected_module, " | intense", intense)
+        elif mode == 1:
+            intense = max(0, intense - intense_step)
+            print("mode: ", mode, " | selected module: ", selected_module, " | intense", intense)
+        
+    if modeButton.value() is 0:
+        mode = 0 if mode == 1 else 1
+        print("mode: ", mode, " | selected module: ", selected_module, " | intense", intense)
+
+    changes = modules[selected_module].get()
     
     for ch in changes:
         light(ch[0], ch[1], ch[2][0], ch[2][1], ch[2][2])
 
     wall.write()
     sleep(0.1)
-    
-    i += 1
-    if i == 10:
-        i = 0
 

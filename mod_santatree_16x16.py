@@ -62,11 +62,11 @@ class Santree:
 				no_colors = len(self.colors[self.tree[x][y]])
     
 				# inverted y <==> x axis to map correctly tree matrix
-				if self.initialized == False:
-					changes.append([y, x, self.colors[self.tree[x][y]][0]])
-				elif no_colors > 1:
+				if no_colors > 1:
 					changes.append([y, x, self.colors[self.tree[x][y]][random.randrange(0, no_colors)]])
+				else:
+					changes.append([y, x, self.colors[self.tree[x][y]][0]])
 		
 		# set initialization flag
-		self.initialized = True
+		#self.initialized = True
 		return changes
