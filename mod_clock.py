@@ -158,7 +158,7 @@ class Clock:
     b3_bd = 1
     b3_map = {}
     b3_fading = 0.5
-    b3_new_pix_rgb = [128, 128, 128]
+    b3_new_pix_rgb = [255, 255, 255]
     # fading sec borders
     def draw_seconds_pointer(self):
         changes = []
