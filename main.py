@@ -2,7 +2,6 @@ from machine import Pin
 from time import sleep
 from neopixel import NeoPixel
 import settime
-import random
 
 from mod_raybouncer import Bounce
 from mod_clock import Clock
@@ -22,10 +21,10 @@ wall.write()
 # MODULES:
 modules = [Clock(xres, yres), Bounce(xres, yres), Santree(xres, yres), MatrixRain(xres, yres)]
 
-# BUTTONS configuration
-plusButton = Pin(15, Pin.IN, Pin.PULL_UP)
-minusButton = Pin(8, Pin.IN, Pin.PULL_UP)
-modeButton = Pin(4, Pin.IN, Pin.PULL_UP)
+# BUTTONS PIN configuration:
+plusButton = Pin(13, Pin.IN, Pin.PULL_UP)
+minusButton = Pin(9, Pin.IN, Pin.PULL_UP)
+modeButton = Pin(5, Pin.IN, Pin.PULL_UP)
 
 
 def mapPixel(x, y):
