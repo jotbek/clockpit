@@ -90,9 +90,9 @@ while True:
         print("mode: ", mode, " | selected module: ", selected_module, " | intense", intense)
         
         if mode == 0:
-            blink(0, 255, 0, 0.1)
+            blink(0, 255, 0, 0.05)
         elif mode == 1:
-            blink(0, 0, 255, 0.1)
+            blink(0, 0, 255, 0.05)
 
     changes = modules[selected_module].get()
     
