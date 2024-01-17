@@ -8,6 +8,7 @@ from mod_clock import Clock
 from mod_santatree_16x16 import Santree
 from mod_matrixrain import MatrixRain
 from mod_lava import Lava
+from mod_fireplace import Fireplace
 
 
 # LED matrix configuration
@@ -24,8 +25,9 @@ modules = [
     Clock(xres, yres),
     Lava(xres, yres), 
     Bounce(xres, yres),
+    MatrixRain(xres, yres),
+    Fireplace(xres, yres),
     Santree(xres, yres),
-    MatrixRain(xres, yres)
 ]
 
 # BUTTONS PIN configuration:

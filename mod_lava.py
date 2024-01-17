@@ -22,8 +22,8 @@ class Lava:
     def invoke(self):
         frame = [[[0, 0, 0] for x in range(self.xres)] for y in range(self.yres)]
 
-        self.b1_a0 += 0.1
-        self.b1_a1 += 0.2        
+        self.b1_a0 += 0.12
+        self.b1_a1 += 0.24   
         
         for y in range(self.yres):
             for x in range(self.xres):
