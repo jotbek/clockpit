@@ -12,7 +12,7 @@ class Bounce:
         changes = []
         for b in self.bouncers:
             changes.extend(b.get())
-        return changes
+        return False, 0.1, changes
 
 
 class BounceOne:

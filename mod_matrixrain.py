@@ -42,4 +42,4 @@ class MatrixRain:
                 
                 changes.append([x, y, self.map[x][y]])
         
-        return changes
+        return False, 0.1, changes

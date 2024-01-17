@@ -7,19 +7,26 @@ from mod_raybouncer import Bounce
 from mod_clock import Clock
 from mod_santatree_16x16 import Santree
 from mod_matrixrain import MatrixRain
+from mod_lava import Lava
 
 
 # LED matrix configuration
-intense = 255 # 0 - 255
+intense = 96 # 0 - 255
 intense_step = 5
 xres = 16
 yres = 16
 ledControlPin = 22
-wall = NeoPixel(Pin(ledControlPin), xres * yres)
-wall.write()
+frame = NeoPixel(Pin(ledControlPin), xres * yres)
+frame.write()
 
 # MODULES:
-modules = [Clock(xres, yres), Bounce(xres, yres), Santree(xres, yres), MatrixRain(xres, yres)]
+modules = [
+    Clock(xres, yres),
+    Lava(xres, yres), 
+    Bounce(xres, yres),
+    Santree(xres, yres),
+    MatrixRain(xres, yres)
+]
 
 # BUTTONS PIN configuration:
 plusButton = Pin(13, Pin.IN, Pin.PULL_UP)
@@ -35,24 +42,29 @@ def mapPixel(x, y):
 
 
 def light(x, y, r, g, b):
-    wall[mapPixel(x, y)] = (int(r*(intense/255)), int(g*(intense/255)), int(b*(intense/255)))
+    frame[mapPixel(x, y)] = (int(r*(intense/255)), int(g*(intense/255)), int(b*(intense/255)))
 
 
 def clear_board():
     for y in range(yres):
         for x in range(xres):
-            if wall[mapPixel(x, y)] != (0, 0 ,0):
+            if frame[mapPixel(x, y)] != (0, 0 ,0):
                 light(x, y, 0, 0, 0)
+
 
 def blink(r, g, b, s):
     for y in range(yres):
         for x in range(xres):
             light(x, y, r, g, b)
     
-    wall.write()                
+    frame.write()                
     print("blink")
     sleep(s)
     clear_board()
+
+
+def print_log():
+    print("mode: ", mode, " | selected module: ", selected_module, " | intense: ", intense, " | delay: ", delay_ms)
 
 
 # setup actual time from NTP server
@@ -61,7 +73,6 @@ try:
 except RuntimeError:
     print("Could not connect to wifi network")
 
-print('test1')
 selected_module = 0
 mode = 0
 
@@ -70,19 +81,19 @@ while True:
         if mode == 0:
             selected_module += 0 if selected_module == len(modules) - 1 else 1
             clear_board()
-            print("mode: ", mode, " | selected module: ", selected_module, " | intense", intense)
+            print_log()
         elif mode == 1:
             intense = min(255, intense + intense_step)
-            print("mode: ", mode, " | selected module: ", selected_module, " | intense", intense)
+            print_log()
     
     if minusButton.value() is 0:
         if mode == 0:
             selected_module -= 0 if selected_module <= 0 else 1
             clear_board()
-            print("mode: ", mode, " | selected module: ", selected_module, " | intense", intense)
+            print_log()
         elif mode == 1:
             intense = max(0, intense - intense_step)
-            print("mode: ", mode, " | selected module: ", selected_module, " | intense", intense)
+            print_log()
         
     if modeButton.value() is 0:
         mode = 0 if mode == 1 else 1
@@ -93,11 +104,17 @@ while True:
         elif mode == 1:
             blink(0, 0, 255, 0.05)
 
-    changes = modules[selected_module].get()
+    is_full_frame, delay_ms, changes = modules[selected_module].get()
     
-    for ch in changes:
-        light(ch[0], ch[1], ch[2][0], ch[2][1], ch[2][2])
+    # full frame
+    if is_full_frame:
+        for y in range(yres):
+            for x in range(xres):
+                light(x, y, changes[x][y][0], changes[x][y][1], changes[x][y][2])
+    else:
+        for ch in changes:
+            light(ch[0], ch[1], ch[2][0], ch[2][1], ch[2][2])
 
-    wall.write()
-    sleep(0.1)
+    frame.write()
+    sleep(delay_ms)
 

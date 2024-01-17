@@ -64,7 +64,7 @@ class Clock:
         changes.extend(self.get_number(self.time_h, rgb=self.hh_color, x_shift=2, y_shift=2, min_forced_lenght=2))
         changes.extend(self.get_number(self.time_m, rgb=self.mm_color, x_shift=7, y_shift=9, min_forced_lenght=2))
         
-        return changes
+        return False, 0.0, changes
                                   
 
     def get_number(self, number, rgb, x_shift = 0, y_shift = 0, min_forced_lenght = 0):
@@ -101,24 +101,6 @@ class Clock:
 
     def insert_str(self, source_str, insert_str, pos):
         return source_str[:pos] + insert_str + source_str[pos:]
-        
-
-    b1_a0 = 0
-    b1_a1 = 1
-    # getting out of memory
-    def get_background_1(self):
-        changes = []        
-        self.b1_a0 += 0.1
-        self.b1_a1 += 0.2        
-        
-        for y in range(self.yres):
-            for x in range(self.xres):
-                r = 128 + math.floor((math.sin(self.b1_a0 + x * 0.4) + math.cos(self.b1_a1 + y * 0.4)) * 63)
-                g = 128 + math.floor((math.sin(self.b1_a0 + y * 0.4) + math.cos(self.b1_a1 + x * 0.4)) * 63)
-                b = 255 - r
-                changes.append([x, y, [int(r / 2), int(g / 2), int(b / 2)]])
-                
-        return changes
     
     
     b2_xy = -1

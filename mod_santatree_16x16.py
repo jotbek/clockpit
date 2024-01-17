@@ -69,4 +69,4 @@ class Santree:
 		
 		# set initialization flag
 		#self.initialized = True
-		return changes
+		return False, 0.1, changes
