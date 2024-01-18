@@ -23,10 +23,10 @@ frame.write()
 # MODULES:
 modules = [
     Clock(xres, yres),
+    Fireplace(xres, yres),
     Lava(xres, yres), 
     Bounce(xres, yres),
     MatrixRain(xres, yres),
-    Fireplace(xres, yres),
     Santree(xres, yres),
 ]
 

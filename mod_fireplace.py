@@ -15,9 +15,6 @@ class Fireplace:
     colors_arr = [
         white_rgb,
         [255, 255, 204],
-#        [255, 250, 180],
-#        [255, 240, 150],
-#        [252, 230, 120],
         [252, 220, 90],
         [252, 210, 60],
         [252, 200, 30],
@@ -63,7 +60,7 @@ class Fireplace:
         self.ignite()
         self.animate()
 
-        return True, 0.0, self.translate2rgb()
+        return True, 0.03, self.apply_filters_convert2rgb()
 
     
     def animate(self):
@@ -75,20 +72,38 @@ class Fireplace:
                 
                 color = min(self.frame[x][y], self.frame[x][y] - random.randint(1, 2))
                 if self.frame[max(x - 1, 0)][y] == 0 or x - 1 < 3:
-                    color = max(color - 2, 0)
+                    color = max(color - 3, 0)
 
                 if (self.frame[min(x + 1, self.xres - 1)]) == 0 or x + 1 > self.xres - 4:
-                    color = max(color - 2, 0)    
+                    color = max(color - 3, 0)    
                 self.light(x, y, x + x_direction, y - y_up, color)
 
 
-    def translate2rgb(self):
+    def apply_filters_convert2rgb(self):
         frame = [[[0, 0, 0] for x in range(self.xres)] for y in range(self.yres)]
         for y in range(self.yres):
             for x in range(self.xres):
                 frame[x][y] = self.colors_dict[self.frame[x][y]]
+                #frame[x][y] = self.apply_low_pass_filter(x, y)
         
         return frame
+
+
+    #disabled low pass filter (too slow)
+    def apply_low_pass_filter(self, x, y):
+        r, g, b = 0, 0, 0
+        
+        # sum rgb values of colors from surrounding pixels
+        for dy in range(-1, 1):
+            for dx in range(-1, 1):  
+                fx = x + dx
+                fy = y + dy        
+                if fx > 0 and fx < self.xres and fy > 0 and fy < self.yres:
+                    r += self.colors_dict[self.frame[fx][fy]][0]
+                    g += self.colors_dict[self.frame[fx][fy]][1]
+                    b += self.colors_dict[self.frame[fx][fy]][2]
+
+        return [int(r / 9), int(g / 9), int(b / 9)]
 
 
     def light(self, x, y, x_new, y_new, color):
