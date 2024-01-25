@@ -1,4 +1,5 @@
 import random
+import _thread
 
 
 class Fireplace:
@@ -41,6 +42,7 @@ class Fireplace:
 
     colors_dict = {}
     frame = []
+    frame_rgb = []
 
 
     def __init__(self, xres, yres):
@@ -53,6 +55,7 @@ class Fireplace:
             i += 1
 
         self.frame = [[0 for x in range(self.xres)] for y in range(self.yres)]
+        self.frame_rgb = [[[0, 0, 0] for x in range(self.xres)] for y in range(self.yres)]
 
     
     def get(self):
@@ -63,10 +66,17 @@ class Fireplace:
 
     
     def animate(self):
-        for y in range(self.yres):
+        _thread.start_new_thread(self.animate_delta, [0, int(self.yres / 2)])
+        self.animate_delta(int(self.yres / 2), self.yres)
+        
+        if random.randint(0, self.spark_fq) == 0:   # spark
+            self.frame[random.randint(0, self.xres - 1)][random.randint(0, int(self.yres / 2))] = len(self.colors_dict) - 1
+    
+    
+    def animate_delta(self, ymin, ymax):
+        for y in range(ymin, ymax):
             for x in range(self.xres):
                 x_direction = random.randint(-1, 1)
-                x_horiz = random.randint(0, 2) * x_direction
                 y_up = 1 #random.randint(1, 2)
                 
                 color = min(self.frame[x][y], self.frame[x][y] - random.randint(1, 2))
@@ -76,23 +86,21 @@ class Fireplace:
                 if (self.frame[min(x + 1, self.xres - 1)]) == 0 or x + 1 > self.xres - 4:
                     color = max(color - 3, 0)    
                 self.light(x, y, x + x_direction, y - y_up, color)
-
-        # spark                
-        if random.randint(0, self.spark_fq) == 0:
-            self.frame[random.randint(0, self.xres - 1)][random.randint(0, int(self.yres / 2))] = len(self.colors_dict) - 1
             
 
     def apply_filters_convert2rgb(self):
-        frame = [[[0, 0, 0] for x in range(self.xres)] for y in range(self.yres)]
-        for y in range(self.yres):
-            for x in range(self.xres):
-                #frame[x][y] = self.colors_dict[self.frame[x][y]]
-                frame[x][y] = self.apply_low_pass_filter(x, y)
+        _thread.start_new_thread(self.apply_filter, [0, int(self.yres / 2)])
+        self.apply_filter(int(self.yres / 2), self.yres)
         
-        return frame
+        return self.frame_rgb
 
 
-    #disabled low pass filter (too slow)
+    def apply_filter(self, ymin, ymax):
+        for y in range(ymin, ymax):
+            for x in range(self.xres):
+                self.frame_rgb[x][y] = self.apply_low_pass_filter(x, y)
+
+
     def apply_low_pass_filter(self, x, y):
         r, g, b = 0, 0, 0
         

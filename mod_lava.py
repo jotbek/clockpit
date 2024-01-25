@@ -21,7 +21,7 @@ class Lava:
         _thread.start_new_thread(self.invoke_1, [])        
         self.invoke_2()
                         
-        return True, 0, self.frame
+        return True, 0.0, self.frame
 
 
     delta1 = 0
