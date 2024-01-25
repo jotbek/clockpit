@@ -4,12 +4,10 @@ import random
 class Fireplace:
     xres = 0
     yres = 0
+    spark_fq = 5 # chance is (100 / spark_fq)%
 
     min_ignite = 3
     max_ignite = 13
-
-    frame = []
-
     black_rgb = [0, 0, 0]
     white_rgb = [255, 255, 255]
     colors_arr = [
@@ -42,6 +40,7 @@ class Fireplace:
     ]
 
     colors_dict = {}
+    frame = []
 
 
     def __init__(self, xres, yres):
@@ -60,7 +59,7 @@ class Fireplace:
         self.ignite()
         self.animate()
 
-        return True, 0.03, self.apply_filters_convert2rgb()
+        return True, 0.0, self.apply_filters_convert2rgb()
 
     
     def animate(self):
@@ -78,13 +77,17 @@ class Fireplace:
                     color = max(color - 3, 0)    
                 self.light(x, y, x + x_direction, y - y_up, color)
 
+        # spark                
+        if random.randint(0, self.spark_fq) == 0:
+            self.frame[random.randint(0, self.xres - 1)][random.randint(0, int(self.yres / 2))] = len(self.colors_dict) - 1
+            
 
     def apply_filters_convert2rgb(self):
         frame = [[[0, 0, 0] for x in range(self.xres)] for y in range(self.yres)]
         for y in range(self.yres):
             for x in range(self.xres):
-                frame[x][y] = self.colors_dict[self.frame[x][y]]
-                #frame[x][y] = self.apply_low_pass_filter(x, y)
+                #frame[x][y] = self.colors_dict[self.frame[x][y]]
+                frame[x][y] = self.apply_low_pass_filter(x, y)
         
         return frame
 
@@ -93,6 +96,9 @@ class Fireplace:
     def apply_low_pass_filter(self, x, y):
         r, g, b = 0, 0, 0
         
+        if self.frame[x][y] == 0:
+            return [r, g, b]
+                            
         # sum rgb values of colors from surrounding pixels
         for dy in range(-1, 1):
             for dx in range(-1, 1):  

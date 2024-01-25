@@ -13,7 +13,7 @@ from mod_fireplace import Fireplace
 
 # LED matrix configuration
 intense = 96 # 0 - 255
-intense_step = 5
+intense_step = 4
 xres = 16
 yres = 16
 ledControlPin = 22
@@ -22,9 +22,9 @@ frame.write()
 
 # MODULES:
 modules = [
-    Lava(xres, yres), 
     Clock(xres, yres),
     Fireplace(xres, yres),
+    Lava(xres, yres), 
     Bounce(xres, yres),
     MatrixRain(xres, yres),
     Santree(xres, yres),

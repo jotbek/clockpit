@@ -28,11 +28,11 @@ class Lava:
     delta2 = 1
     done_1 = False
     def invoke_1(self):
-        self.delta1 += 0.14
+        self.delta1 += 0.2
         self.delta2 += 0.28   
         
-        for y in range(0, 8):
-            for x in range(0, 16):
+        for y in range(0, int(self.yres / 2)):
+            for x in range(0, self.xres):
                 r = 128 + math.floor((math.sin(self.delta1 + x * 0.4) + math.cos(self.delta2 + y * 0.4)) * 63)
                 g = 128 + math.floor((math.sin(self.delta1 + y * 0.4) + math.cos(self.delta2 + x * 0.4)) * 63)
                 b = 255 - r
@@ -47,7 +47,7 @@ class Lava:
     delta4 = 1
     done_2 = False
     def invoke_2(self):       
-        self.delta3 += 0.14
+        self.delta3 += 0.2
         self.delta4 += 0.28   
         
         for y in range(8, 16):
