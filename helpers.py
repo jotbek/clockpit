@@ -1,10 +1,11 @@
+colors_rgb = {
+    'black' : [[0, 0, 0]],
+    'red' : [[255, 0, 0]],
+    'green' : [[0, 255, 0]],
+    'blue' : [[0, 0, 255]],
+}
 
-symbols_16x16 = {
-    'c_black' : [[0, 0, 0]],
-    'c_red' : [[255, 0, 0]],
-    'c_green' : [[0, 255, 0]],
-    'c_blue' : [[0, 0, 255]],
-    
+symbols_16x16 = {  
     'black_16x16' : [
         [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
         [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -62,4 +63,333 @@ symbols_16x16 = {
         [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     ]
 }
+
+digit_zero = [
+    [1, 1, 1],
+    [1, 0, 1],
+    [1, 0, 1],
+    [1, 0, 1],
+    [1, 1, 1]
+]
+
+digit_one = [
+    [0, 0, 1],
+    [0, 0, 1],
+    [0, 0, 1],
+    [0, 0, 1],
+    [0, 0, 1]
+]
+
+digit_two = [
+    [1, 1, 1],
+    [0, 0, 1],
+    [1, 1, 1],
+    [1, 0, 0],
+    [1, 1, 1]
+]
+
+digit_three = [
+    [1, 1, 1],
+    [0, 0, 1],
+    [1, 1, 1],
+    [0, 0, 1],
+    [1, 1, 1]
+]
+
+digit_four = [
+    [1, 0, 1],
+    [1, 0, 1],
+    [1, 1, 1],
+    [0, 0, 1],
+    [0, 0, 1]
+]
+
+digit_five = [
+    [1, 1, 1],
+    [1, 0, 0],
+    [1, 1, 1],
+    [0, 0, 1],
+    [1, 1, 1]
+]
+
+digit_six = [
+    [1, 1, 1],
+    [1, 0, 0],
+    [1, 1, 1],
+    [1, 0, 1],
+    [1, 1, 1]
+]
+
+digit_seven = [
+    [1, 1, 1],
+    [0, 0, 1],
+    [0, 0, 1],
+    [0, 0, 1],
+    [0, 0, 1]
+]
+
+digit_eight = [
+    [1, 1, 1],
+    [1, 0, 1],
+    [1, 1, 1],
+    [1, 0, 1],
+    [1, 1, 1]
+]
+
+digit_nine = [
+    [1, 1, 1],
+    [1, 0, 1],
+    [1, 1, 1],
+    [0, 0, 1],
+    [1, 1, 1]
+]
+
+digits_5x3 = {
+    0 : digit_zero,
+    1 : digit_one,
+    2 : digit_two,
+    3 : digit_three,
+    4 : digit_four, 
+    5 : digit_five,
+    6 : digit_six,
+    7 : digit_seven,
+    8 : digit_eight,
+    9 : digit_nine
+}
+
+capital_letter_A = [
+    [1, 1, 1],
+    [1, 0, 1],
+    [1, 1, 1],
+    [1, 0, 1],
+    [1, 0, 1]
+]
+
+capital_letter_B = [
+    [1, 1, 1],
+    [1, 0, 1],
+    [1, 1, 1],
+    [1, 0, 1],
+    [1, 1, 1]
+]
+
+capital_letter_C = [
+    [1, 1, 1],
+    [1, 0, 0],
+    [1, 0, 0],
+    [1, 0, 0],
+    [1, 1, 1]
+]
+
+capital_letter_D = [
+    [1, 1, 1],
+    [1, 0, 1],
+    [1, 0, 1],
+    [1, 0, 1],
+    [1, 1, 1]
+]
+
+capital_letter_E = [
+    [1, 1, 1],
+    [1, 0, 0],
+    [1, 1, 1],
+    [1, 0, 0],
+    [1, 1, 1]
+]
+
+capital_letter_F = [
+    [1, 1, 1],
+    [1, 0, 0],
+    [1, 1, 1],
+    [1, 0, 0],
+    [1, 0, 0]
+]
+
+capital_letter_G = [
+    [1, 1, 1],
+    [1, 0, 0],
+    [1, 0, 1],
+    [1, 0, 1],
+    [1, 1, 1]
+]
+
+capital_letter_H = [
+    [1, 0, 1],
+    [1, 0, 1],
+    [1, 1, 1],
+    [1, 0, 1],
+    [1, 0, 1]
+]
+
+capital_letter_I = [
+    [1, 1, 1],
+    [0, 1, 0],
+    [0, 1, 0],
+    [0, 1, 0],
+    [1, 1, 1]
+]
+
+capital_letter_J = [
+    [1, 1, 1],
+    [0, 0, 1],
+    [0, 0, 1],
+    [1, 0, 1],
+    [1, 1, 1]
+]
+
+capital_letter_K = [
+    [1, 0, 1],
+    [1, 0, 1],
+    [1, 1, 0],
+    [1, 0, 1],
+    [1, 0, 1]
+]
+
+capital_letter_L = [
+    [1, 0, 0],
+    [1, 0, 0],
+    [1, 0, 0],
+    [1, 0, 0],
+    [1, 1, 1]
+]
+
+capital_letter_M = [
+    [1, 0, 1],
+    [1, 1, 1],
+    [1, 0, 1],
+    [1, 0, 1],
+    [1, 0, 1]
+]
+
+capital_letter_N = [
+    [1, 0, 1],
+    [1, 1, 1],
+    [1, 1, 1],
+    [1, 0, 1],
+    [1, 0, 1]
+]
+
+capital_letter_O = [
+    [1, 1, 1],
+    [1, 0, 1],
+    [1, 0, 1],
+    [1, 0, 1],
+    [1, 1, 1]
+]
+
+capital_letter_P = [
+    [1, 1, 1],
+    [1, 0, 1],
+    [1, 1, 1],
+    [1, 0, 0],
+    [1, 0, 0]
+]
+
+capital_letter_Q = [
+    [1, 1, 1],
+    [1, 0, 1],
+    [1, 0, 1],
+    [1, 1, 1],
+    [0, 0, 1]
+]
+
+capital_letter_R = [
+    [1, 1, 1],
+    [1, 0, 1],
+    [1, 1, 0],
+    [1, 0, 1],
+    [1, 0, 1]
+]
+
+capital_letter_S = [
+    [1, 1, 1],
+    [1, 0, 0],
+    [1, 1, 1],
+    [0, 0, 1],
+    [1, 1, 1]
+]
+
+capital_letter_T = [
+    [1, 1, 1],
+    [0, 1, 0],
+    [0, 1, 0],
+    [0, 1, 0],
+    [0, 1, 0]
+]
+
+capital_letter_U = [
+    [1, 0, 1],
+    [1, 0, 1],
+    [1, 0, 1],
+    [1, 0, 1],
+    [1, 1, 1]
+]
+
+capital_letter_V = [
+    [1, 0, 1],
+    [1, 0, 1],
+    [1, 0, 1],
+    [1, 0, 1],
+    [0, 1, 0]
+]
+
+capital_letter_W = [
+    [1, 0, 1],
+    [1, 0, 1],
+    [1, 0, 1],
+    [1, 1, 1],
+    [1, 0, 1]
+]
+
+capital_letter_X = [
+    [1, 0, 1],
+    [1, 0, 1],
+    [0, 1, 0],
+    [1, 0, 1],
+    [1, 0, 1]
+]
+
+capital_letter_Y = [
+    [1, 0, 1],
+    [1, 0, 1],
+    [0, 1, 0],
+    [0, 1, 0],
+    [0, 1, 0]
+]
+
+capital_letter_Z = [
+    [1, 1, 1],
+    [0, 0, 1],
+    [0, 1, 0],
+    [1, 0, 0],
+    [1, 1, 1]
+]
     
+capital_capital_letter_dict = {
+    'A': capital_letter_A,
+    'B': capital_letter_B,
+    'C': capital_letter_C,
+    'D': capital_letter_D,
+    'E': capital_letter_E,
+    'F': capital_letter_F,
+    'G': capital_letter_G,
+    'H': capital_letter_H,
+    'I': capital_letter_I,
+    'J': capital_letter_J,
+    'K': capital_letter_K,
+    'L': capital_letter_L,
+    'M': capital_letter_M,
+    'N': capital_letter_N,
+    'O': capital_letter_O,
+    'P': capital_letter_P,
+    'Q': capital_letter_Q,
+    'R': capital_letter_R,
+    'S': capital_letter_S,
+    'T': capital_letter_T,
+    'U': capital_letter_U,
+    'V': capital_letter_V,
+    'W': capital_letter_W,
+    'X': capital_letter_X,
+    'Y': capital_letter_Y,
+    'Z': capital_letter_Z
+}
