@@ -365,7 +365,7 @@ capital_letter_Z = [
     [1, 1, 1]
 ]
     
-capital_capital_letter_dict = {
+capital_letter_dict = {
     'A': capital_letter_A,
     'B': capital_letter_B,
     'C': capital_letter_C,
