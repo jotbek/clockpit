@@ -45,7 +45,7 @@ def mapPixel(x, y):
 
 def light(x, y, r, g, b):
     frame[mapPixel(x, y)] = (int(r*(intense/255)), int(g*(intense/255)), int(b*(intense/255)))
-
+        
 
 def clear_board():
     for y in range(yres):

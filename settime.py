@@ -39,4 +39,3 @@ def run():
         print( 'ip = ' + status[0] )
 
     set_time()
-    print("Local time fetched from NTP sever. Onboard RTC set to: ", time.localtime())
