@@ -11,15 +11,21 @@ password = secrets.wifi_pass
 
 
 def set_time():
+    print('\nSetting RTC...')
     print("Local time before synchronization: %s" %str(time.localtime()))
     ntptime.settime()
     print("Local time after synchronization: %s" %str(time.localtime()))
 
 
 def run():
+    print('Scanning for available WiFi networks...')
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
-    print(wlan.scan())
+    
+    for n in wlan.scan():
+        print('ssid:', n[0], ' | bssid:', n[1], ' | channel:', n[2], ' | RSSI:', n[3], ' | security:', n[4], ' | hidden:', n[5])
+    
+    print('\nConnecting to \'', ssid, '\'...')
     wlan.connect(ssid, password)
 
     max_wait = 20
@@ -32,10 +38,10 @@ def run():
         time.sleep(2)
 
     if wlan.status() != 3:
-        raise RuntimeError('network connection failed')
+        raise RuntimeError('Network connection failed')
     else:
-        print('connected')
+        print('Connected to \'', ssid, '\'')
         status = wlan.ifconfig()
-        print( 'ip = ' + status[0] )
+        print('ip = ' + status[0])
 
     set_time()

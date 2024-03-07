@@ -1,7 +1,13 @@
+#
+# To work you should provide credentials to selected WiFi network you want to connect
+# Put them to the secrets.py file as strings:
+# wifi_name = 'ssid_of_network'
+# wifi_pass = 'password'
+#
 from machine import Pin
 from time import sleep
 from neopixel import NeoPixel
-import settime
+import initializator
 
 from mod_raybouncer import Bounce
 from mod_clock import Clock
@@ -71,7 +77,7 @@ def print_log():
 
 # setup actual time from NTP server
 try:
-    settime.run()
+    initializator.run()
 except RuntimeError:
     print("Could not connect to wifi network")
 
