@@ -16,6 +16,7 @@ from mod_matrixrain import MatrixRain
 from mod_lava import Lava
 from mod_fireplace import Fireplace
 from mod_fireplasma import FirePlasma
+from mod_gameoflife import GameOfLife
 
 
 # LED matrix configuration
@@ -31,6 +32,7 @@ frame.write()
 modules = [
     Clock(xres, yres),
     FirePlasma(xres, yres),
+    GameOfLife(xres, yres),
     Lava(xres, yres), 
     Fireplace(xres, yres),
     Bounce(xres, yres),
