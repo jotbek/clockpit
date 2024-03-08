@@ -2,12 +2,13 @@ import network
 import time
 import secrets
 import ntptime
-
-from machine import Pin
-from machine import RTC
+import machine
 
 ssid = secrets.wifi_name
 password = secrets.wifi_pass
+
+# overclock
+overclock_freq = 250000000
 
 
 def set_time():
@@ -17,7 +18,7 @@ def set_time():
     print("Local time after synchronization: %s" %str(time.localtime()))
 
 
-def run():
+def connect():
     print('Scanning for available WiFi networks...')
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
@@ -44,4 +45,14 @@ def run():
         status = wlan.ifconfig()
         print('ip = ' + status[0])
 
+
+def overclock():
+    print('Current freq:', machine.freq()/1000000, 'Mhz')
+    machine.freq(overclock_freq)
+    print('Overclocked with:', machine.freq()/1000000, 'Mhz')
+
+
+def run():
+    overclock()
+    connect()       
     set_time()
