@@ -29,8 +29,8 @@ frame.write()
 
 # MODULES:
 modules = [
-    FirePlasma(xres, yres),
     Clock(xres, yres),
+    FirePlasma(xres, yres),
     Lava(xres, yres), 
     Fireplace(xres, yres),
     Bounce(xres, yres),
