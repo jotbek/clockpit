@@ -5,9 +5,9 @@
 # wifi_pass = 'password'
 #
 from machine import Pin
-from time import sleep
 from neopixel import NeoPixel
 import initializator
+import time
 
 from mod_raybouncer import Bounce
 from mod_clock import Clock
@@ -15,6 +15,7 @@ from mod_santatree_16x16 import Santree
 from mod_matrixrain import MatrixRain
 from mod_lava import Lava
 from mod_fireplace import Fireplace
+from mod_fireplasma import FirePlasma
 
 
 # LED matrix configuration
@@ -28,6 +29,7 @@ frame.write()
 
 # MODULES:
 modules = [
+    FirePlasma(xres, yres),
     Clock(xres, yres),
     Lava(xres, yres), 
     Fireplace(xres, yres),
@@ -67,7 +69,7 @@ def blink(r, g, b, s):
     
     frame.write()                
     print("blink")
-    sleep(s)
+    time.sleep(s)
     clear_board()
 
 
@@ -75,16 +77,8 @@ def print_log():
     print("mode: ", mode, " | selected module: ", selected_module, " | intense: ", intense, " | delay: ", delay_ms)
 
 
-# setup actual time from NTP server
-try:
-    initializator.run()
-except RuntimeError:
-    print("Could not connect to wifi network")
-
-selected_module = 0
-mode = 0
-
-while True:
+def handle_buttons():
+    global mode, selected_module, intense, intense_step
     if plusButton.value() is 0:
         if mode == 0:
             selected_module += 0 if selected_module == len(modules) - 1 else 1
@@ -93,7 +87,7 @@ while True:
         elif mode == 1:
             intense = min(255, intense + intense_step)
             print_log()
-    
+
     if minusButton.value() is 0:
         if mode == 0:
             selected_module -= 0 if selected_module <= 0 else 1
@@ -112,6 +106,29 @@ while True:
         elif mode == 1:
             blink(0, 0, 255, 0.05)
 
+
+# setup actual time from NTP server
+try:
+    initializator.run()
+except RuntimeError:
+    print("Could not connect to wifi network")
+
+selected_module = 0
+mode = 0
+
+# to print out the number of fps module use every 50 rounds (should not impact performance)
+counter = 0
+max_counter = 50
+start_time = time.time_ns()
+
+while True:
+    if counter == max_counter:
+        counter = 0
+        print('fps: ', "{:.2f}".format(max_counter / ((time.time_ns() - start_time) / 1e9)))
+        start_time = time.time_ns()
+    
+    handle_buttons()
+        
     is_full_frame, delay_ms, changes = modules[selected_module].get()
     
     # full frame
@@ -124,5 +141,7 @@ while True:
             light(ch[0], ch[1], ch[2][0], ch[2][1], ch[2][2])
 
     frame.write()
-    sleep(delay_ms)
+    time.sleep(delay_ms)
+    
+    counter += 1
 

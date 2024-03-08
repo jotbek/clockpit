@@ -1,9 +1,10 @@
 import random
+import helpers
 
 class Bounce:
     bouncers = []
     def __init__(self, max_x, max_y):
-        bouncers = [[0, 0, 255], [255, 0, 0]]
+        bouncers = [helpers.colors_rgb['red'], helpers.colors_rgb['blue']]
         for b in bouncers:
             self.bouncers.append(BounceOne(max_x, max_y, 30, b))
 
