@@ -22,18 +22,17 @@ class Lava:
 
     delta3 = 0
     delta4 = 1
-    done_2 = False
     def animate(self):       
+        # perfomance: reference locally
+        _frame = self.frame
         self.delta3 += 0.2
         self.delta4 += 0.28   
         
-        for y in range(0, 16):
-            for x in range(0, 16):
+        for y in range(0, self.xres):
+            for x in range(0, self.yres):
                 r = 128 + math.floor((math.sin(self.delta3 + x * 0.4) + math.cos(self.delta4 + y * 0.4)) * 63)
                 g = 128 + math.floor((math.sin(self.delta3 + y * 0.4) + math.cos(self.delta4 + x * 0.4)) * 63)
                 b = 255 - r
                 
                 #changes.append([x, y, [int(r / 2), int(g / 2), int(b / 2)]])
-                self.frame[x][y] = [int(r / 2), int(g / 2), int(b / 2)]
-        
-        self.done_2 = True
+                _frame[x][y] = [int(r / 2), int(g / 2), int(b / 2)]
