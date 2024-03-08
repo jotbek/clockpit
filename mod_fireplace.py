@@ -44,7 +44,7 @@ class Fireplace:
     frame_rgb = []
 
 
-    def __init__(self, xres, yres):
+    def __init__(self, xres, yres):        
         self.xres = xres
         self.yres = yres
 
@@ -72,18 +72,20 @@ class Fireplace:
     
     
     def animate_delta(self, ymin, ymax):
+        # perfomance: reference locally
+        _frame = self.frame
+        
         for y in range(ymin, ymax):
             for x in range(self.xres):
                 x_direction = random.randint(-1, 1)
-                y_up = 1 #random.randint(1, 2)
                 
-                color = min(self.frame[x][y], self.frame[x][y] - random.randint(1, 2))
-                if self.frame[max(x - 1, 0)][y] == 0 or x - 1 < 3:
+                color = min(_frame[x][y], _frame[x][y] - random.randint(1, 2))
+                if _frame[max(x - 1, 0)][y] == 0 or x - 1 < 3:
                     color = max(color - 3, 0)
 
-                if (self.frame[min(x + 1, self.xres - 1)]) == 0 or x + 1 > self.xres - 4:
+                if (_frame[min(x + 1, self.xres - 1)]) == 0 or x + 1 > self.xres - 4:
                     color = max(color - 3, 0)    
-                self.light(x, y, x + x_direction, y - y_up, color)
+                self.light(x, y, x + x_direction, y - 1, color)
             
 
     def apply_filters_convert2rgb(self):
@@ -93,12 +95,19 @@ class Fireplace:
 
 
     def apply_filter(self, ymin, ymax):
+        # perfomance: reference locally
+        _frame_rgb = self.frame_rgb
+        
         for y in range(ymin, ymax):
             for x in range(self.xres):
-                self.frame_rgb[x][y] = self.apply_low_pass_filter(x, y)
+                _frame_rgb[x][y] = self.apply_low_pass_filter(x, y)
 
 
     def apply_low_pass_filter(self, x, y):
+        # perfomance: reference locally
+        _colors_dict = self.colors_dict
+        _frame = self.frame
+        
         r, g, b = 0, 0, 0
         
         if self.frame[x][y] == 0:
@@ -110,20 +119,23 @@ class Fireplace:
                 fx = x + dx
                 fy = y + dy        
                 if fx > 0 and fx < self.xres and fy > 0 and fy < self.yres:
-                    r += self.colors_dict[self.frame[fx][fy]][0]
-                    g += self.colors_dict[self.frame[fx][fy]][1]
-                    b += self.colors_dict[self.frame[fx][fy]][2]
+                    r += _colors_dict[_frame[fx][fy]][0]
+                    g += _colors_dict[_frame[fx][fy]][1]
+                    b += _colors_dict[_frame[fx][fy]][2]
 
         return [int(r / 9), int(g / 9), int(b / 9)]
 
 
     def light(self, x, y, x_new, y_new, color):
+        # perfomance: reference locally
+        _frame = self.frame
+        
         if y_new >= 0 and y_new < self.yres:
             if x_new >= 0 and x_new < self.xres :
-                self.frame[x_new][y_new] = max(color, 0)
+                _frame[x_new][y_new] = max(color, 0)
         
         # replace old pixel            
-        self.frame[x][y] = max(self.frame[x][y] - 1, 0)
+        _frame[x][y] = max(_frame[x][y] - 1, 0)
 
 
     def ignite(self):
