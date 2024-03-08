@@ -8,6 +8,7 @@ from machine import Pin
 from neopixel import NeoPixel
 import initializator
 import time
+import gc
 
 from mod_raybouncer import Bounce
 from mod_clock import Clock
@@ -109,6 +110,19 @@ def handle_buttons():
             blink(0, 0, 255, 0.05)
 
 
+def free_memory():       
+        b_F = gc.mem_free()
+        b_A = gc.mem_alloc()
+        b_T = b_F+b_A
+        b_P = '{0:.2f}%'.format(b_F / b_T * 100)
+        
+        gc.collect()
+        
+        F = gc.mem_free()
+        P = '{0:.2f}%'.format(F / b_T*100)
+        
+        print('Memory usage [prev/now] => Total: [{0}]  Free: [{1}|{2}] ({3}|{4})'.format(b_T, b_F, F, b_P, P))
+
 # setup actual time from NTP server
 try:
     initializator.run()
@@ -118,9 +132,9 @@ except RuntimeError:
 selected_module = 0
 mode = 0
 
-# to print out the number of fps module use every 50 rounds (should not impact performance)
+# to print out the number of fps module use every 'max_counter' rounds (should not impact performance)
 counter = 0
-max_counter = 50
+max_counter = 25
 start_time = time.time_ns()
 
 while True:
@@ -128,7 +142,8 @@ while True:
         counter = 0
         print('fps: ', "{:.2f}".format(max_counter / ((time.time_ns() - start_time) / 1e9)))
         start_time = time.time_ns()
-    
+        free_memory()
+
     handle_buttons()
         
     is_full_frame, delay_ms, changes = modules[selected_module].get()
