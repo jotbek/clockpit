@@ -1,5 +1,4 @@
 import random
-import _thread
 
 
 class Fireplace:
@@ -66,8 +65,7 @@ class Fireplace:
 
     
     def animate(self):
-        _thread.start_new_thread(self.animate_delta, [0, int(self.yres / 2)])
-        self.animate_delta(int(self.yres / 2), self.yres)
+        self.animate_delta(0, self.yres)
         
         if random.randint(0, self.spark_fq) == 0:   # spark
             self.frame[random.randint(0, self.xres - 1)][random.randint(0, int(self.yres / 2))] = len(self.colors_dict) - 1
@@ -89,8 +87,7 @@ class Fireplace:
             
 
     def apply_filters_convert2rgb(self):
-        _thread.start_new_thread(self.apply_filter, [0, int(self.yres / 2)])
-        self.apply_filter(int(self.yres / 2), self.yres)
+        self.apply_filter(0, self.yres)
         
         return self.frame_rgb
 
