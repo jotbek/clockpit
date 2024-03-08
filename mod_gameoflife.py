@@ -78,7 +78,7 @@ class GameOfLife:
         if (time.time() - self.timestamp > self.time_max_s):
             self.init()            
             self.frame = [[[0, 255, 0] for _ in range(self.xres)] for _ in range(self.yres)]
-            self.time_max_s = time.time()
+            self.timestamp = time.time()
             return True, 0.5, self.frame
         else:           
             self.update()
