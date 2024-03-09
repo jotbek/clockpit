@@ -18,6 +18,7 @@ from mod_lava import Lava
 from mod_fireplace import Fireplace
 from mod_fireplasma import FirePlasma
 from mod_gameoflife import GameOfLife
+from mod_rainbow import Rainbow
 
 
 # LED matrix configuration
@@ -38,6 +39,7 @@ modules = [
     Fireplace(xres, yres),
     Bounce(xres, yres),
     MatrixRain(xres, yres),
+    Rainbow(xres, yres),
     Santree(xres, yres),
 ]
 

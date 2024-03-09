@@ -29,6 +29,12 @@ class FirePlasma:
         self.heat = [[0.0 for y in range(self.height)] for x in range(self.width)]
 
 
+    def get(self):
+        self.update()
+        self.draw()
+        return True, 0.0, self.frame
+    
+    
     def update(self):
         # take local references as it's quicker than accessing the global
         # and we access it a lot in this method
@@ -84,9 +90,3 @@ class FirePlasma:
                     col = _fire_colours[7]
                 
                 _frame[x][y] = col
-
-
-    def get(self):
-        self.update()
-        self.draw()
-        return True, 0.0, self.frame
