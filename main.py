@@ -19,6 +19,7 @@ from mod_fireplace import Fireplace
 from mod_fireplasma import FirePlasma
 from mod_gameoflife import GameOfLife
 from mod_rainbow import Rainbow
+from mod_cortex import ColorVortex
 
 
 # LED matrix configuration
@@ -29,24 +30,37 @@ yres = 16
 ledControlPin = 22
 frame = NeoPixel(Pin(ledControlPin), xres * yres)
 frame.write()
+current_module = None
 
 # MODULES:
 modules = [
-    Clock(xres, yres),
-    FirePlasma(xres, yres),
-    GameOfLife(xres, yres),
-    Lava(xres, yres), 
-    Fireplace(xres, yres),
-    Bounce(xres, yres),
-    MatrixRain(xres, yres),
-    Rainbow(xres, yres),
-    Santree(xres, yres),
+    (Clock, xres, yres),
+    (FirePlasma, xres, yres),
+    (ColorVortex, xres, yres),
+    (GameOfLife, xres, yres),
+    (Lava, xres, yres), 
+    (Fireplace, xres, yres),
+    # (Bounce, xres, yres),
+    (MatrixRain, xres, yres),
+    (Rainbow, xres, yres),
+    (Santree, xres, yres),
 ]
 
 # BUTTONS PIN configuration:
 plusButton = Pin(13, Pin.IN, Pin.PULL_UP)
 minusButton = Pin(9, Pin.IN, Pin.PULL_UP)
 modeButton = Pin(5, Pin.IN, Pin.PULL_UP)
+
+
+def delete_module(module):
+    del module
+    gc.collect()
+
+
+def create_module(module_class, xres, yres):
+    new_module = module_class(xres, yres)
+    gc.collect() 
+    return new_module
 
 
 def mapPixel(x, y):
@@ -83,10 +97,12 @@ def print_log():
 
 
 def handle_buttons():
-    global mode, selected_module, intense, intense_step
+    global mode, selected_module, intense, intense_step, current_module
     if plusButton.value() is 0:
         if mode == 0:
             selected_module += 0 if selected_module == len(modules) - 1 else 1
+            delete_module(current_module)
+            current_module = create_module(*modules[selected_module])
             clear_board()
             print_log()
         elif mode == 1:
@@ -96,6 +112,8 @@ def handle_buttons():
     if minusButton.value() is 0:
         if mode == 0:
             selected_module -= 0 if selected_module <= 0 else 1
+            delete_module(current_module)
+            current_module = create_module(*modules[selected_module])
             clear_board()
             print_log()
         elif mode == 1:
@@ -133,6 +151,7 @@ except RuntimeError:
 
 selected_module = 0
 mode = 0
+current_module = create_module(*modules[selected_module])
 
 # to print out the number of fps module use every 'max_counter' rounds (should not impact performance)
 counter = 0
@@ -148,7 +167,7 @@ while True:
 
     handle_buttons()
         
-    is_full_frame, delay_ms, changes = modules[selected_module].get()
+    is_full_frame, delay_ms, changes = current_module.get()
     
     # full frame
     if is_full_frame:
@@ -163,4 +182,3 @@ while True:
     time.sleep(delay_ms)
     
     counter += 1
-
