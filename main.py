@@ -6,7 +6,7 @@
 #
 from machine import Pin
 from neopixel import NeoPixel
-import initializator
+import init
 import time
 import gc
 
@@ -145,7 +145,7 @@ def free_memory():
 
 # setup actual time from NTP server
 try:
-    initializator.run()
+    init.run()
 except RuntimeError:
     print("Could not connect to wifi network")
 

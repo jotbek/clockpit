@@ -27,7 +27,7 @@ class Clock:
         changes.extend(self.get_number(self.time_h, rgb=self.clear_color, x_shift=2, y_shift=2, min_forced_lenght=2))
         changes.extend(self.get_number(self.time_m, rgb=self.clear_color, x_shift=7, y_shift=9, min_forced_lenght=2))
            
-        h = time.localtime()[3] + 1      
+        h = time.localtime()[3] + 2
         self.time_h = 0 if h == 24 else h  # Central Europe timezone
         self.time_m = time.localtime()[4]
         self.time_s = time.localtime()[5]                
