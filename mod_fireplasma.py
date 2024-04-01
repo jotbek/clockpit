@@ -11,10 +11,10 @@ class FirePlasma:
     fire_spawns = 5
     damping_factor = 0.97
     fire_colours = [[0, 0, 0],
-                    [20, 10, 0],
-                    [40, 20, 0],
-                    [180, 30, 0],
-                    [220, 160, 0],
+                    [15, 0, 0],
+                    [30, 0, 0],
+                    [180, 0, 0],
+                    [220, 100, 0],
                     [252, 210, 60],
                     [252, 220, 100],
                     [255, 255, 180]]
@@ -72,19 +72,19 @@ class FirePlasma:
         for y in range(self.yres):
             for x in range(self.xres):
                 value = _heat[x + 1][y]
-                if value < 0.30:
+                if value < 0.38:
                     col = _fire_colours[0]
-                elif value < 0.35:
+                elif value < 0.4:
                     col = _fire_colours[1]
-                elif value < 0.40:
-                    col = _fire_colours[2]                    
                 elif value < 0.45:
-                    col = _fire_colours[3]
+                    col = _fire_colours[2]                    
                 elif value < 0.50:
+                    col = _fire_colours[3]
+                elif value < 0.54:
                     col = _fire_colours[4]
-                elif value < 0.55:
+                elif value < 0.58:
                     col = _fire_colours[5]
-                elif value < 0.60:
+                elif value < 0.63:
                     col = _fire_colours[6]                    
                 else:
                     col = _fire_colours[7]
