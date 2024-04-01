@@ -2,7 +2,7 @@ import math
 
 
 class ColorVortex:
-    def __init__(self, xres, yres, speed=0.05):
+    def __init__(self, xres, yres, speed=0.3):
         self.xres = xres
         self.yres = yres
         self.radius = min(xres, yres) // 2
@@ -17,15 +17,11 @@ class ColorVortex:
         # Generate vortex animation
         for x in range(self.xres):
             for y in range(self.yres):
-                distance = math.sqrt((x - self.center_x) ** 2 + (y - self.center_y) ** 2)
-                if distance < self.radius:
-                    angle_offset = math.atan2(y - self.center_y, x - self.center_x)
-                    angle_offset += self.angle
-                    color_offset = int((angle_offset * 180 / math.pi) % 360)
-                    rgb = self.hsv_to_rgb(color_offset, 1, 1)
-                    changes.append([x, y, rgb])
-                else:
-                    changes.append([x, y, [0, 0, 0]])  # Black for background
+                angle_offset = math.atan2(y - self.center_y, x - self.center_x)
+                angle_offset += self.angle
+                color_offset = int((angle_offset * 180 / math.pi) % 360)
+                rgb = self.hsv_to_rgb(color_offset, 1, 1)
+                changes.append([x, y, rgb])
         # Update angle for next frame
         self.angle += self.speed
         return False, 0.0, changes  # Full frame changes

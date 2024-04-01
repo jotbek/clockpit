@@ -19,7 +19,7 @@ from mod_fireplace import Fireplace
 from mod_fireplasma import FirePlasma
 from mod_gameoflife import GameOfLife
 from mod_rainbow import Rainbow
-from mod_cortex import ColorVortex
+from mod_vortex import ColorVortex
 
 
 # LED matrix configuration
