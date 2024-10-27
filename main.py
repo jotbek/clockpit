@@ -31,6 +31,7 @@ ledControlPin = 22
 frame = NeoPixel(Pin(ledControlPin), xres * yres)
 frame.write()
 current_module = None
+clock_module = None
 
 # MODULES:
 modules = [
@@ -81,23 +82,18 @@ def clear_board():
                 light(x, y, 0, 0, 0)
 
 
-def display_symbol(symbol_name, color, duration):
+def display_symbol16x16(symbol_name, color, duration):
     symbol = helpers.symbols_16x16.get(symbol_name)
     if symbol is None:
         return
-    # Calculate starting positions to center the symbol
-    symbol_height = len(symbol)
-    symbol_width = len(symbol[0]) if symbol_height > 0 else 0
-    x_start = (xres - symbol_width) // 2
-    y_start = (yres - symbol_height) // 2
 
-    # Display the symbol
-    for y in range(symbol_height):
-        for x in range(symbol_width):
+    # Display the symbol starting from (0, 0)
+    for y in range(yres):
+        for x in range(xres):
             if symbol[y][x]:
-                light(x + x_start, y + y_start, *color)
+                light(x, y, *color)
             else:
-                light(x + x_start, y + y_start, 0, 0, 0)
+                light(x, y, 0, 0, 0)
     frame.write()
     time.sleep(duration)
     clear_board()
@@ -110,7 +106,7 @@ def print_log():
 def handle_buttons():
     global mode, selected_module, intense, intense_step, current_module
     if plusButton.value() == 0:
-        if mode == 0:
+        if mode == 0 or mode == 2:
             selected_module += 1 if selected_module < len(modules) - 1 else 0
             delete_module(current_module)
             current_module = create_module(*modules[selected_module])
@@ -121,7 +117,7 @@ def handle_buttons():
             print_log()
 
     if minusButton.value() == 0:
-        if mode == 0:
+        if mode == 0 or mode == 2:
             selected_module -= 1 if selected_module > 0 else 0
             delete_module(current_module)
             current_module = create_module(*modules[selected_module])
@@ -132,15 +128,18 @@ def handle_buttons():
             print_log()
 
     if modeButton.value() == 0:
-        mode = 0 if mode == 1 else 1
+        mode = (mode + 1) % 3  # Cycle through modes 0, 1, 2
         print("mode: ", mode, " | selected module: ", selected_module, " | intense", intense)
 
         if mode == 0:
             # Display the triangle symbol in green color
-            display_symbol('triangle_up_down', helpers.colors_rgb['green'], 0.5)
+            display_symbol16x16('triangle_up_down', helpers.colors_rgb['green'], 0.5)
         elif mode == 1:
-            # Display the light bulb symbol in yellow color
-            display_symbol('sun', helpers.colors_rgb['yellow'], 0.5)
+            # Display the sun symbol in yellow color
+            display_symbol16x16('sun', helpers.colors_rgb['yellow'], 0.5)
+        elif mode == 2:
+            # Display the clock symbol in blue color
+            display_symbol16x16('clock', helpers.colors_rgb['blue'], 0.5)
 
 
 def free_memory():
@@ -156,17 +155,18 @@ def free_memory():
 
     print('Memory usage [prev/now] => Total: [{0}]  Free: [{1}|{2}] ({3}|{4})'.format(b_T, b_F, F, b_P, P))
 
-# setup actual time from NTP server
+# Setup actual time from NTP server
 try:
     init.run()
 except RuntimeError:
-    print("Could not connect to wifi network")
+    print("Could not connect to Wi-Fi network")
 
 selected_module = 0
 mode = 0
 current_module = create_module(*modules[selected_module])
+clock_module = create_module(Clock, xres, yres)  # Create the clock module once
 
-# to print out the number of fps module use every 'max_counter' rounds (should not impact performance)
+# To print out the number of fps module use every 'max_counter' rounds (should not impact performance)
 counter = 0
 max_counter = 25
 start_time = time.time_ns()
@@ -182,14 +182,34 @@ while True:
 
     is_full_frame, delay_ms, changes = current_module.get()
 
-    # full frame
-    if is_full_frame:
-        for y in range(yres):
-            for x in range(xres):
-                light(x, y, changes[x][y][0], changes[x][y][1], changes[x][y][2])
+    if mode == 2:
+        # Overlay clock on top of current module
+        clock_is_full_frame, clock_delay_ms, clock_changes = clock_module.get()
+        # Apply the current module's changes
+        if is_full_frame:
+            for y in range(yres):
+                for x in range(xres):
+                    light(x, y, changes[x][y][0], changes[x][y][1], changes[x][y][2])
+        else:
+            for ch in changes:
+                light(ch[0], ch[1], ch[2][0], ch[2][1], ch[2][2])
+        # Then, apply the clock's changes, overwriting any overlapping pixels
+        if clock_is_full_frame:
+            for y in range(yres):
+                for x in range(xres):
+                    light(x, y, clock_changes[x][y][0], clock_changes[x][y][1], clock_changes[x][y][2])
+        else:
+            for ch in clock_changes:
+                light(ch[0], ch[1], ch[2][0], ch[2][1], ch[2][2])
     else:
-        for ch in changes:
-            light(ch[0], ch[1], ch[2][0], ch[2][1], ch[2][2])
+        # Display current module normally
+        if is_full_frame:
+            for y in range(yres):
+                for x in range(xres):
+                    light(x, y, changes[x][y][0], changes[x][y][1], changes[x][y][2])
+        else:
+            for ch in changes:
+                light(ch[0], ch[1], ch[2][0], ch[2][1], ch[2][2])
 
     frame.write()
     time.sleep(delay_ms)
