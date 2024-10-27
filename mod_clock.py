@@ -20,6 +20,67 @@ class Clock:
         self.xres = xres
         self.yres = yres
 
+    def is_dst_poland(self, year, month, day, hour):
+        # Checks if daylight saving time (DST) is in effect in Poland for the given date and time.
+        # DST in Poland starts on the last Sunday of March at 2:00 AM
+        # and ends on the last Sunday of October at 3:00 AM.
+
+        # Find the last Sunday of March
+        last_sunday_march = 31
+        for d in range(31, 24, -1):
+            if self.day_of_week(year, 3, d) == 6:  # Niedziela
+                last_sunday_march = d
+                break
+        # Find the last Sunday of October
+        last_sunday_october = 31
+        for d in range(31, 24, -1):
+            if self.day_of_week(year, 10, d) == 6:  # Niedziela
+                last_sunday_october = d
+                break
+
+        if (month > 3 and month < 10):
+            return True
+        elif month == 3:
+            if day > last_sunday_march:
+                return True
+            elif day < last_sunday_march:
+                return False
+            else:  # day == last_sunday_march
+                if hour >= 2:
+                    return True
+                else:
+                    return False
+        elif month == 10:
+            if day < last_sunday_october:
+                return True
+            elif day > last_sunday_october:
+                return False
+            else:  # day == last_sunday_october
+                if hour < 3:
+                    return True
+                else:
+                    return False
+        else:
+            return False
+
+    def day_of_week(self, y, m, d):
+        # Zeller's Congruence algorithm for the Gregorian calendar
+        if m < 3:
+            m += 12
+            y -= 1
+        K = y % 100
+        J = y // 100
+        h = (d + ((13*(m + 1)) // 5) + K + (K // 4) + (J // 4) - 2*J) % 7
+        # h = 0: Saturday
+        # h = 1: Sunday
+        # h = 2: Monday
+        # h = 3: Tuesday
+        # h = 4: Wednesday
+        # h = 5: Thursday
+        # h = 6: Friday
+        # Adjust to week numbering where Monday=0, Sunday=6
+        weekday = (h + 5) % 7
+        return weekday  # 0=Monday, ..., 6=Sunday
 
     def get(self):
         changes = []
@@ -27,10 +88,25 @@ class Clock:
         changes.extend(self.get_number(self.time_h, rgb=self.clear_color, x_shift=2, y_shift=2, min_forced_lenght=2))
         changes.extend(self.get_number(self.time_m, rgb=self.clear_color, x_shift=7, y_shift=9, min_forced_lenght=2))
            
-        h = time.localtime()[3] + 2
-        self.time_h = 0 if h == 24 else h  # Central Europe timezone
-        self.time_m = time.localtime()[4]
-        self.time_s = time.localtime()[5]                
+        lt = time.localtime()
+        year = lt[0]
+        month = lt[1]
+        day = lt[2]
+        hour = lt[3]
+        minute = lt[4]
+        second = lt[5]
+
+        if self.is_dst_poland(year, month, day, hour):
+            h = hour + 2  # CEST (UTC+2)
+        else:
+            h = hour + 1  # CET (UTC+1)
+
+        if h >= 24:
+            h -= 24
+
+        self.time_h = h
+        self.time_m = minute
+        self.time_s = second              
 
         # changes.extend(self.get_background_2())
         
@@ -76,7 +152,7 @@ class Clock:
     
     b2_xy = -1
     b2_direction = 1
-    # simple moving lines
+    # Simple moving lines
     def get_background_2(self):        
         changes = []
         
@@ -101,7 +177,7 @@ class Clock:
         return changes
     
 
-    # fading sec borders
+    # Fading second borders
     dots = []
     r_frame = g_frame = b_frame = 120
     r_delta = -1
@@ -155,6 +231,6 @@ class Clock:
         if res_c > self.c_max - self.c_delta:
             result_delta = -self.c_delta
         elif res_c < 0:
-          result_delta = self.c_delta
+            result_delta = self.c_delta
           
         return result_c + result_delta, result_delta

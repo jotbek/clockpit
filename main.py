@@ -40,7 +40,7 @@ modules = [
     (GameOfLife, xres, yres),
     (Lava, xres, yres), 
     (Fireplace, xres, yres),
-    # (Bounce, xres, yres),
+    #(Bounce, xres, yres),
     (MatrixRain, xres, yres),
     (Rainbow, xres, yres),
     (Santree, xres, yres),
