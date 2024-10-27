@@ -1,4 +1,4 @@
-# LED Matrix Display with Raspberry Pi Pico
+# CLOCKPIT
 
 This project showcases a variety of animations and functionalities on a 16x16 LED matrix using a Raspberry Pi Pico running MicroPython. It includes multiple modules that display different animations, a digital clock with daylight saving time adjustments for Poland, and interactive controls via buttons.
 
@@ -72,35 +72,42 @@ wifi_pass = 'your_password'
         * Random initial states.
         * Automatic reset after a set time.
 
-5. Lava (mod_lava.py)
+5. Lava (```mod_lava.py```)
     Simulates a lava lamp effect with flowing, molten colors.
 
     * Features:
         * Sinusoidal color calculations.
         * Continuous color flow.
 
-6. Fireplace (```mod_fireplace.py```)
+6. Ray Bouncer (```mod_raybouncer.py```)
+    Displays bouncing "bouncers" that change directions upon hitting the edges of the matrix. Each bouncer leaves a fading trail as it moves across the screen.
+
+    * Features:
+        * Multiple bouncers with different colors (e.g., red and blue).
+        * Smooth animations with fading effects.
+
+7. Fireplace (```mod_fireplace.py```)
     Mimics the appearance of a cozy fireplace with flickering flames.
 
     * Features:
         * Sparks and embers.
         * Low-pass filtering for smoother visuals.
 
-7. Matrix Rain (```mod_matrixrain.py```)
+8. Matrix Rain (```mod_matrixrain.py```)
     Recreates the "digital rain" effect from the Matrix movies.
 
     * Features:
     * Falling green code streams.
     * Adjustable speed and color intensity.
 
-8. Rainbow (```mod_rainbow.py```)
+9. Rainbow (```mod_rainbow.py```)
     Displays a vibrant rainbow that shifts colors across the LED matrix.
 
     * Features:
         * Hue shifting for dynamic colors.
         * Increased saturation and brightness.
 
-9. Santa Tree (```mod_santatree_16x16.py```)
+10. Santa Tree (```mod_santatree_16x16.py```)
     Shows a festive Christmas tree with sparkling lights.
 
     * Features:

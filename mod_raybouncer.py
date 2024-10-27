@@ -2,12 +2,11 @@ import random
 import helpers
 
 class Bounce:
-    bouncers = []
     def __init__(self, max_x, max_y):
-        bouncers = [helpers.colors_rgb['red'], helpers.colors_rgb['blue']]
-        for b in bouncers:
-            self.bouncers.append(BounceOne(max_x, max_y, 30, b))
-
+        self.bouncers = []
+        colors = [helpers.colors_rgb['red'], helpers.colors_rgb['blue']]
+        for color in colors:
+            self.bouncers.append(BounceOne(max_x, max_y, 30, color))
 
     def get(self):
         changes = []
@@ -15,37 +14,31 @@ class Bounce:
             changes.extend(b.get())
         return False, 0.1, changes
 
-
 class BounceOne:
-    boom_blast = [255, 204, 102]
-    max_x, max_y = 0, 0
-    map = []
-    x, y = 1, 1
-    step_x, step_y = 1, 1
-    fading = 0
-    active_rgb = []
-
-
     def __init__(self, max_x, max_y, fading, rgb):
-        self.map = [[[0] * 3] * max_x for _ in range(max_y)]
+        self.boom_blast = [255, 204, 102]
         self.max_x = max_x
         self.max_y = max_y
+        # Correctly initialize the map to avoid shared references
+        self.map = [[[0, 0, 0] for _ in range(max_y)] for _ in range(max_x)]
+        self.x, self.y = 1, 1
+        self.step_x, self.step_y = 1, 1
         self.fading = fading
         self.active_rgb = rgb
 
-
     def boom(self, x, y):
-        if random.randint(0, 100) >= 10: return
+        if random.randint(0, 100) >= 10:
+            return
 
-        self.map[max(0, x - 1)][max(0, y - 1)] = self.boom_blast
-        self.map[max(0, x - 1)][y] = self.boom_blast
-        self.map[max(0, x - 1)][min(self.max_y - 1, y + 1)] = self.boom_blast
-        self.map[x][max(0, y - 1)] = self.boom_blast
-        self.map[x][min(self.max_y - 1, y + 1)] = self.boom_blast
-        self.map[min(self.max_x - 1, x + 1)][max(0, y - 1)] = self.boom_blast
-        self.map[min(self.max_x - 1, x + 1)][y] = self.boom_blast
-        self.map[min(self.max_x - 1, x + 1)][min(self.max_y - 1, y + 1)] = self.boom_blast
-
+        # Use .copy() to prevent shared references
+        self.map[max(0, x - 1)][max(0, y - 1)] = self.boom_blast.copy()
+        self.map[max(0, x - 1)][y] = self.boom_blast.copy()
+        self.map[max(0, x - 1)][min(self.max_y - 1, y + 1)] = self.boom_blast.copy()
+        self.map[x][max(0, y - 1)] = self.boom_blast.copy()
+        self.map[x][min(self.max_y - 1, y + 1)] = self.boom_blast.copy()
+        self.map[min(self.max_x - 1, x + 1)][max(0, y - 1)] = self.boom_blast.copy()
+        self.map[min(self.max_x - 1, x + 1)][y] = self.boom_blast.copy()
+        self.map[min(self.max_x - 1, x + 1)][min(self.max_y - 1, y + 1)] = self.boom_blast.copy()
 
     def get(self):
         changes = []
