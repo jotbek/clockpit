@@ -20,10 +20,10 @@ from mod_fireplasma import FirePlasma
 from mod_gameoflife import GameOfLife
 from mod_rainbow import Rainbow
 from mod_vortex import ColorVortex
-
+import helpers
 
 # LED matrix configuration
-intense = 96 # 0 - 255
+intense = 96  # 0 - 255
 intense_step = 4
 xres = 16
 yres = 16
@@ -38,7 +38,7 @@ modules = [
     (FirePlasma, xres, yres),
     (ColorVortex, xres, yres),
     (GameOfLife, xres, yres),
-    (Lava, xres, yres), 
+    (Lava, xres, yres),
     (Fireplace, xres, yres),
     (Bounce, xres, yres),
     (MatrixRain, xres, yres),
@@ -59,7 +59,7 @@ def delete_module(module):
 
 def create_module(module_class, xres, yres):
     new_module = module_class(xres, yres)
-    gc.collect() 
+    gc.collect()
     return new_module
 
 
@@ -72,23 +72,34 @@ def mapPixel(x, y):
 
 def light(x, y, r, g, b):
     frame[mapPixel(x, y)] = (int(r*(intense/255)), int(g*(intense/255)), int(b*(intense/255)))
-        
+
 
 def clear_board():
     for y in range(yres):
         for x in range(xres):
-            if frame[mapPixel(x, y)] != (0, 0 ,0):
+            if frame[mapPixel(x, y)] != (0, 0, 0):
                 light(x, y, 0, 0, 0)
 
 
-def blink(r, g, b, s):
-    for y in range(yres):
-        for x in range(xres):
-            light(x, y, r, g, b)
-    
-    frame.write()                
-    print("blink")
-    time.sleep(s)
+def display_symbol(symbol_name, color, duration):
+    symbol = helpers.symbols_16x16.get(symbol_name)
+    if symbol is None:
+        return
+    # Calculate starting positions to center the symbol
+    symbol_height = len(symbol)
+    symbol_width = len(symbol[0]) if symbol_height > 0 else 0
+    x_start = (xres - symbol_width) // 2
+    y_start = (yres - symbol_height) // 2
+
+    # Display the symbol
+    for y in range(symbol_height):
+        for x in range(symbol_width):
+            if symbol[y][x]:
+                light(x + x_start, y + y_start, *color)
+            else:
+                light(x + x_start, y + y_start, 0, 0, 0)
+    frame.write()
+    time.sleep(duration)
     clear_board()
 
 
@@ -98,9 +109,9 @@ def print_log():
 
 def handle_buttons():
     global mode, selected_module, intense, intense_step, current_module
-    if plusButton.value() is 0:
+    if plusButton.value() == 0:
         if mode == 0:
-            selected_module += 0 if selected_module == len(modules) - 1 else 1
+            selected_module += 1 if selected_module < len(modules) - 1 else 0
             delete_module(current_module)
             current_module = create_module(*modules[selected_module])
             clear_board()
@@ -109,9 +120,9 @@ def handle_buttons():
             intense = min(255, intense + intense_step)
             print_log()
 
-    if minusButton.value() is 0:
+    if minusButton.value() == 0:
         if mode == 0:
-            selected_module -= 0 if selected_module <= 0 else 1
+            selected_module -= 1 if selected_module > 0 else 0
             delete_module(current_module)
             current_module = create_module(*modules[selected_module])
             clear_board()
@@ -119,29 +130,31 @@ def handle_buttons():
         elif mode == 1:
             intense = max(0, intense - intense_step)
             print_log()
-        
-    if modeButton.value() is 0:
+
+    if modeButton.value() == 0:
         mode = 0 if mode == 1 else 1
         print("mode: ", mode, " | selected module: ", selected_module, " | intense", intense)
-        
+
         if mode == 0:
-            blink(0, 255, 0, 0.05)
+            # Display the triangle symbol in green color
+            display_symbol('triangle_up_down', helpers.colors_rgb['green'], 0.5)
         elif mode == 1:
-            blink(0, 0, 255, 0.05)
+            # Display the light bulb symbol in yellow color
+            display_symbol('sun', helpers.colors_rgb['yellow'], 0.5)
 
 
-def free_memory():       
-        b_F = gc.mem_free()
-        b_A = gc.mem_alloc()
-        b_T = b_F+b_A
-        b_P = '{0:.2f}%'.format(b_F / b_T * 100)
-        
-        gc.collect()
-        
-        F = gc.mem_free()
-        P = '{0:.2f}%'.format(F / b_T*100)
-        
-        print('Memory usage [prev/now] => Total: [{0}]  Free: [{1}|{2}] ({3}|{4})'.format(b_T, b_F, F, b_P, P))
+def free_memory():
+    b_F = gc.mem_free()
+    b_A = gc.mem_alloc()
+    b_T = b_F + b_A
+    b_P = '{0:.2f}%'.format(b_F / b_T * 100)
+
+    gc.collect()
+
+    F = gc.mem_free()
+    P = '{0:.2f}%'.format(F / b_T * 100)
+
+    print('Memory usage [prev/now] => Total: [{0}]  Free: [{1}|{2}] ({3}|{4})'.format(b_T, b_F, F, b_P, P))
 
 # setup actual time from NTP server
 try:
@@ -166,9 +179,9 @@ while True:
         free_memory()
 
     handle_buttons()
-        
+
     is_full_frame, delay_ms, changes = current_module.get()
-    
+
     # full frame
     if is_full_frame:
         for y in range(yres):
@@ -180,5 +193,5 @@ while True:
 
     frame.write()
     time.sleep(delay_ms)
-    
+
     counter += 1
