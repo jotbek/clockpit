@@ -117,17 +117,24 @@ wifi_pass = 'your_password'
 # Button Controls
 
 * Mode Button (GPIO 5):
-    * Press: Switch between module selection mode and brightness adjustment mode.
-    * Indicator: Blinks green for module mode, blue for brightness mode.
+    * Press: Cycle through the three modes:
+        1. Module Selection Mode: Navigate between different modules.
+        2. Brightness Adjustment Mode: Adjust the display brightness.
+        3. Clock Overlay Mode: Overlay the clock on the current module.
 
-* Plus Button (GPIO 13):
-    * Module Mode: Switch to the next module.
-    * Brightness Mode: Increase brightness.
+    * Indicator: Displays a symbol to indicate the current mode:
+        * Module Selection Mode: Green up/down triangles.
+        * Brightness Adjustment Mode: Yellow sun symbol.
+        * Clock Overlay Mode: Blue clock symbol.
 
-* Minus Button (GPIO 9):
-    * Module Mode: Switch to the previous module.
-    * Brightness Mode: Decrease brightness.
-
+    * Plus Button (GPIO 13):
+        * Module Selection Mode: Switch to the next module.
+        * Brightness Adjustment Mode: Increase brightness.
+    
+    * Minus Button (GPIO 9):
+        * Module Selection Mode: Switch to the previous module.
+        * Brightness Adjustment Mode: Decrease brightness.
+        
 # Customization
 * Add New Modules:
     * Create a new ```mod_yourmodule.py``` file.
