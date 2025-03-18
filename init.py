@@ -8,7 +8,7 @@ ssid = secrets.wifi_name
 password = secrets.wifi_pass
 
 # overclock
-overclock_freq = 200000000
+overclock_freq = 250000000
 
 
 def set_time():
