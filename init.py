@@ -3,12 +3,14 @@ import time
 import secrets
 import ntptime
 import machine
+import sys
 
 ssid = secrets.wifi_name
 password = secrets.wifi_pass
 
 # overclock
-overclock_freq = 250000000
+normal_freq = 125_000_000  # 125 MHz
+overclock_freq = 250_000_000  # 250 MHz (tested with 266 and 300 MHz, but unstable)
 
 
 def set_time():
@@ -48,11 +50,22 @@ def connect():
 
 def overclock():
     print('Current freq:', machine.freq()/1000000, 'Mhz')
-    machine.freq(overclock_freq)
+
+    try:
+        machine.freq(overclock_freq)
+    except Exception as e:
+        machine.freq(normal_freq)
+        print('Overclocking failed, setting to normal freq:', e)
+        
     print('Overclocked with:', machine.freq()/1000000, 'Mhz')
 
 
 def run():
-    overclock()
-    connect()       
-    set_time()
+    try:
+        overclock()
+        connect()       
+        set_time()
+    except Exception as e:
+        print('Initialization failed:', e)
+        sys.exit(1)
+        

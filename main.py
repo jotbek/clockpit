@@ -155,11 +155,11 @@ def free_memory():
 
     print('Memory usage [prev/now] => Total: [{0}]  Free: [{1}|{2}] ({3}|{4})'.format(b_T, b_F, F, b_P, P))
 
-# Setup actual time from NTP server
+# Setup actual time from NTP server and overclocking
 try:
     init.run()
 except RuntimeError:
-    print("Could not connect to Wi-Fi network")
+    print("Could not initialize the program... Exit.")
 
 selected_module = 0
 mode = 0
