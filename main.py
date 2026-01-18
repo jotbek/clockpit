@@ -21,7 +21,6 @@ from mod_gameoflife import GameOfLife
 from mod_rainbow import Rainbow
 from mod_vortex import ColorVortex
 from mod_spiral import Spiral
-from mod_clouds import Clouds
 import helpers
 
 # LED matrix configuration

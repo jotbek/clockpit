@@ -38,7 +38,30 @@ wifi_pass = 'your_password'
     * Connect the three buttons to GPIO pins 5, 9, and 13 with pull-up resistors.
 
 5. Run the Program:
-    * Reset the Pico or run main.py to start the program.
+    * Reset the Pico or run `main.py` on the device to start the program.
+    * To run and debug the project on a desktop without hardware, use the included GUI simulator.
+
+6. Simulator (Desktop GUI) — quick start:
+    * Requirements: Python 3 (3.8+ recommended) and `tkinter` installed (usually part of standard CPython).
+    * Run the simulator from the repository root:
+      ```bash
+      python simulator_gui.py
+      ```
+    * Features:
+      - Renders the 16x16 LED matrix in a window (uses `main.mapPixel` for correct serpentine mapping).
+      - Simulates three buttons:
+        - Up (GPIO 13) — "Up" button in the GUI
+        - Down (GPIO 9) — "Down" button in the GUI
+        - Mode (GPIO 5) — "Mode" button in the GUI (click to cycle modes)
+      - Module selection combobox: pick any installed module to switch immediately.
+      - Speed control: `Speed -` / `Speed +` buttons change simulation speed (discrete options).
+      - Exit button to stop the simulator. **Note:** the GUI Reset button has been removed; to restart the simulator with default settings, re-run `python simulator_gui.py`.
+      - The GUI uses lightweight stubs for `neopixel`, `machine.Pin`, and `gc` so `main.py` runs unchanged.
+    * How to use buttons: Click and hold a GUI button to simulate a momentary hardware press.
+    * Notes for developers:
+      - The simulator registers a callback when `NeoPixel.write()` is called and updates the GUI.
+      - Use the combobox or the hardware-mode button behavior (Mode/Up/Down) to test interactions.
+
 
 # Modules Description
 1. Clock (```mod_clock.py```)
@@ -58,79 +81,68 @@ wifi_pass = 'your_password'
         * Realistic fire animation.
         * Configurable fire spawn rate and damping factor.
 
-3. Color Vortex (```mod_vortex.py```)
-    Displays a swirling vortex of colors that shifts hues over time, creating a mesmerizing effect.
-
-    * Features:
-        * Smooth color transitions.
-        * Adjustable rotation speed.
-
-4. Game of Life (```mod_gameoflife.py```)
+3. Game of Life (```mod_gameoflife.py```)
     Implements Conway's Game of Life with evolving cellular automata patterns.
 
     * Features:
         * Random initial states.
         * Automatic reset after a set time.
 
-5. Lava (```mod_lava.py```)
-    Simulates a lava lamp effect with flowing, molten colors.
+4. Spiral (```mod_spiral.py```)
+    Draws a clockwise spiral path one pixel at a time with a slowly shifting hue, creating a warm, flowing spiral effect.
 
     * Features:
-        * Sinusoidal color calculations.
-        * Continuous color flow.
+        * Clockwise spiral traversal from the outer frame to the center.
+        * Smooth color transitions using HSV-to-RGB conversion.
+
+5. Matrix Rain (```mod_matrixrain.py```)
+    Recreates the "digital rain" effect from the Matrix movies.
+
+    * Features:
+        * Falling green code streams.
+        * Adjustable speed and color intensity.
 
 6. Ray Bouncer (```mod_raybouncer.py```)
     Displays bouncing "bouncers" that change directions upon hitting the edges of the matrix. Each bouncer leaves a fading trail as it moves across the screen.
 
     * Features:
         * Multiple bouncers with different colors (e.g., red and blue).
-        * Smooth animations with fading effects.
+        * Smooth animations with fading and occasional "boom" effects.
 
-7. Fireplace (```mod_fireplace.py```)
+7. Color Vortex (```mod_vortex.py```)
+    Displays a swirling vortex of colors that shifts hues over time, creating a mesmerizing effect.
+
+    * Features:
+        * Smooth color transitions.
+        * Adjustable rotation speed.
+
+8. Lava (```mod_lava.py```)
+    Simulates a lava lamp effect with flowing, molten colors.
+
+    * Features:
+        * Sinusoidal color calculations.
+        * Continuous color flow.
+
+9. Fireplace (```mod_fireplace.py```)
     Mimics the appearance of a cozy fireplace with flickering flames.
 
     * Features:
         * Sparks and embers.
         * Low-pass filtering for smoother visuals.
 
-8. Matrix Rain (```mod_matrixrain.py```)
-    Recreates the "digital rain" effect from the Matrix movies.
-
-    * Features:
-    * Falling green code streams.
-    * Adjustable speed and color intensity.
-
-9. Rainbow (```mod_rainbow.py```)
+10. Rainbow (```mod_rainbow.py```)
     Displays a vibrant rainbow that shifts colors across the LED matrix.
 
     * Features:
         * Hue shifting for dynamic colors.
         * Increased saturation and brightness.
 
-10. Santa Tree (```mod_santatree_16x16.py```)
+11. Santa Tree (```mod_santatree_16x16.py```)
     Shows a festive Christmas tree with sparkling lights.
 
     * Features:
         * Predefined tree pattern.
-        * Randomly changing sparkles.
-
-# Button Controls
-
-* Mode Button (GPIO 5):
-    * Press: Cycle through the three modes:
-        1. Module Selection Mode: Navigate between different modules.
-        2. Brightness Adjustment Mode: Adjust the display brightness.
-        3. Clock Overlay Mode: Overlay the clock on the current module.
-
-    * Indicator: Displays a symbol to indicate the current mode:
-        * Module Selection Mode: Green up/down triangles.
-        * Brightness Adjustment Mode: Yellow sun symbol.
-        * Clock Overlay Mode: Blue clock symbol.
-
-    * Plus Button (GPIO 13):
-        * Module Selection Mode: Switch to the next module.
-        * Brightness Adjustment Mode: Increase brightness.
-    
+        * Randomly changing sparkles
     * Minus Button (GPIO 9):
         * Module Selection Mode: Switch to the previous module.
         * Brightness Adjustment Mode: Decrease brightness.
