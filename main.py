@@ -20,6 +20,8 @@ from mod_fireplasma import FirePlasma
 from mod_gameoflife import GameOfLife
 from mod_rainbow import Rainbow
 from mod_vortex import ColorVortex
+from mod_spiral import Spiral
+from mod_clouds import Clouds
 import helpers
 
 # LED matrix configuration
@@ -37,12 +39,13 @@ clock_module = None
 modules = [
     (Clock, xres, yres),
     (FirePlasma, xres, yres),
-    (ColorVortex, xres, yres),
     (GameOfLife, xres, yres),
+    (Spiral, xres, yres),
+    (MatrixRain, xres, yres),
+    (Bounce, xres, yres),
+    (ColorVortex, xres, yres),
     (Lava, xres, yres),
     (Fireplace, xres, yres),
-    (Bounce, xres, yres),
-    (MatrixRain, xres, yres),
     (Rainbow, xres, yres),
     (Santree, xres, yres),
 ]
