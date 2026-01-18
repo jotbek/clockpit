@@ -74,8 +74,11 @@ def mapPixel(x, y):
         return xres * y + xres - 1 - x
 
 
-def light(x, y, r, g, b):
-    frame[mapPixel(x, y)] = (int(r*(intense/255)), int(g*(intense/255)), int(b*(intense/255)))
+def light(x, y, r, g, b, intense_override=None):    
+    intense_val = intense
+    if intense_override is not None:
+        intense_val = intense_override
+    frame[mapPixel(x, y)] = (int(r*(intense_val/255)), int(g*(intense_val/255)), int(b*(intense_val/255)))
 
 
 def clear_board():
@@ -102,6 +105,54 @@ def display_symbol16x16(symbol_name, color, duration):
     clear_board()
 
 
+def display_percentage(percent, color, duration=0.1):
+    # Render percentage (digits + '%') centered as an overlay, then restore background
+    s = str(int(max(0, min(100, percent))))
+    digit_map = helpers.digits_5x3
+    percent_map = helpers.letters_5x3.get('%')
+
+    # compute width: digits + spaces + 1 space + percent
+    digits_width = len(s) * 3 + (len(s) - 1) * 1
+    total_width = digits_width + 1 + 3  # one column gap and percent glyph
+    start_x = (xres - total_width) // 2
+    start_y = (yres - 5) // 2
+
+    # save previous pixels in bounding box
+    prev = {}
+    for x in range(start_x, start_x + total_width):
+        for y in range(start_y, start_y + 5):
+            if 0 <= x < xres and 0 <= y < yres:
+                prev[(x, y)] = frame[mapPixel(x, y)]
+
+    # draw digits
+    x_cursor = start_x
+    for ch in s:
+        glyph = digit_map.get(int(ch))
+        if glyph is None:
+            x_cursor += 4
+            continue
+        for gy in range(5):
+            for gx in range(3):
+                if glyph[gy][gx]:
+                    light(x_cursor + gx, start_y + gy, *color, intense_override=128)
+        x_cursor += 4  # 3 width + 1 spacing
+
+    # draw percent glyph
+    for gy in range(5):
+        for gx in range(3):
+            if percent_map[gy][gx]:
+                light(x_cursor + gx, start_y + gy, *color, intense_override=128)
+
+    frame.write()
+    time.sleep(duration)
+
+    # restore previous pixels directly (avoid re-scaling)
+    for pos, col in prev.items():
+        x, y = pos
+        frame[mapPixel(x, y)] = col
+    frame.write()
+
+
 def print_log():
     print("mode: ", mode, " | selected module: ", selected_module, " | intense: ", intense, " | delay: ", delay_ms)
 
@@ -117,6 +168,9 @@ def handle_buttons():
             print_log()
         elif mode == 1:
             intense = min(255, intense + intense_step)
+            # Show brightness percent overlay in center
+            pct = int(intense * 100 / 255)
+            display_percentage(pct, helpers.colors_rgb['yellow'])
             print_log()
 
     if minusButton.value() == 0:
@@ -128,6 +182,9 @@ def handle_buttons():
             print_log()
         elif mode == 1:
             intense = max(0, intense - intense_step)
+            # Show brightness percent overlay in center
+            pct = int(intense * 100 / 255)
+            display_percentage(pct, helpers.colors_rgb['yellow'])
             print_log()
 
     if modeButton.value() == 0:
