@@ -150,9 +150,6 @@ if 'main' not in sys.modules:
 
 main = sys.modules['main']
 
-# default brightness
-main.intense = 200
-
 # Read xres/yres from main
 xres = getattr(main, 'xres', 16)
 yres = getattr(main, 'yres', 16)

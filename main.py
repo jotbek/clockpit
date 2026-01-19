@@ -21,6 +21,7 @@ from mod_gameoflife import GameOfLife
 from mod_rainbow import Rainbow
 from mod_vortex import ColorVortex
 from mod_spiral import Spiral
+from mod_maze import Maze
 import helpers
 
 # LED matrix configuration
@@ -46,6 +47,7 @@ modules = [
     (Lava, xres, yres),
     (Fireplace, xres, yres),
     (Rainbow, xres, yres),
+    (Maze, xres, yres),
     (Santree, xres, yres),
 ]
 
