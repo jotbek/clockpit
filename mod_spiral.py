@@ -2,6 +2,9 @@ import random
 import time
 
 
+min_delay = 1
+max_delay = 4
+
 class Spiral:
     def __init__(self, xres, yres, delay=0.01):
         self.xres = xres
@@ -17,8 +20,12 @@ class Spiral:
         self.spawn_draw()
 
         # Schedule alternating events (erase / new marker) every random interval
-        self.next_event_time = time.time() + random.uniform(0.2, 1.0)
+        self.next_event_time = time.time() + random.uniform(min_delay, max_delay)
         self.next_is_erase = True  # alternate between erase and spawn draw
+
+        # Event guard: prevent re-entrant handling and rapid retriggers
+        self._in_event = False
+        self.last_event_time = 0.0
 
     def _compute_spiral_path(self, w, h):
         # Generate coordinates following a clockwise spiral from outer frame to center
@@ -58,12 +65,28 @@ class Spiral:
         # Manage timed events: alternate spawn erase / spawn draw every 2..8 seconds
         now = time.time()
         if now >= self.next_event_time:
-            if self.next_is_erase:
-                self.spawn_erase()
+            # Debounce: skip if we just fired an event very recently
+            if now - self.last_event_time < 0.05:
+                # Too soon after previous event; skip
+                pass
+            elif self._in_event:
+                # Re-entrant; skip
+                pass
             else:
-                self.spawn_draw()
-            self.next_is_erase = not self.next_is_erase
-            self.next_event_time = now + random.uniform(2, 8)
+                self._in_event = True
+                try:
+                    # Use an integer interval and reserve next event time
+                    interval = random.randint(min_delay, max_delay)
+                    self.next_event_time = now + interval
+                    self.last_event_time = now
+                    print("Spiral event:", "erase" if self.next_is_erase else "draw", " | actors:", len(self.actors), "time: ", now, " next at ", self.next_event_time, " interval:", interval, " id:", id(self))
+                    if self.next_is_erase:
+                        self.spawn_erase()
+                    else:
+                        self.spawn_draw()
+                    self.next_is_erase = not self.next_is_erase
+                finally:
+                    self._in_event = False
 
         changes = []
         if not self.path:
