@@ -64,7 +64,10 @@ wifi_pass = 'your_password'
 
 
 # Modules Description
-1. Clock (```mod_clock.py```)
+
+This project includes the following modules (order matches `main.py`):
+
+1. Clock (```mod_clock.py```) 
 
     Displays the current time, adjusting automatically for daylight saving time in Poland (CEST/CET). It shows hours and minutes with a seconds indicator around the border.
 
@@ -73,7 +76,9 @@ wifi_pass = 'your_password'
         * Visual seconds indicator.
         * Customizable colors.
 
-2. Fire Plasma (```mod_fireplasma.py```)
+    ![Clock](screenshots/Simulator_Clock.png)
+
+2. Fire Plasma (```mod_fireplasma.py```) 
 
     Creates a dynamic fire-like plasma effect using heat maps and color gradients.
 
@@ -81,72 +86,109 @@ wifi_pass = 'your_password'
         * Realistic fire animation.
         * Configurable fire spawn rate and damping factor.
 
+    ![FirePlasma](screenshots/Simulator_FirePlasma.png)
+
 3. Game of Life (```mod_gameoflife.py```)
+
     Implements Conway's Game of Life with evolving cellular automata patterns.
 
     * Features:
         * Random initial states.
         * Automatic reset after a set time.
 
+    ![GameOfLife](screenshots/Simulator_GameOfLife.png)
+
 4. Spiral (```mod_spiral.py```)
+
     Draws a clockwise spiral path one pixel at a time with a slowly shifting hue, creating a warm, flowing spiral effect.
 
     * Features:
         * Clockwise spiral traversal from the outer frame to the center.
         * Smooth color transitions using HSV-to-RGB conversion.
 
+    ![Spiral](screenshots/Simulator_Spiral.png)
+
 5. Matrix Rain (```mod_matrixrain.py```)
+
     Recreates the "digital rain" effect from the Matrix movies.
 
     * Features:
         * Falling green code streams.
         * Adjustable speed and color intensity.
 
-6. Ray Bouncer (```mod_raybouncer.py```)
+    ![MatrixRain](screenshots/Simulator_MatrixRain.png)
+
+6. Ray Bouncer (```mod_raybouncer.py``` / class `Bounce`)
+
     Displays bouncing "bouncers" that change directions upon hitting the edges of the matrix. Each bouncer leaves a fading trail as it moves across the screen.
 
     * Features:
         * Multiple bouncers with different colors (e.g., red and blue).
         * Smooth animations with fading and occasional "boom" effects.
 
-7. Color Vortex (```mod_vortex.py```)
+    ![Bounce](screenshots/Simulator_Bounce.png)
+
+7. Color Vortex (```mod_vortex.py``` / class `ColorVortex`)
+
     Displays a swirling vortex of colors that shifts hues over time, creating a mesmerizing effect.
 
     * Features:
         * Smooth color transitions.
         * Adjustable rotation speed.
 
+    ![Vortex](screenshots/Simulator_Vortex.png)
+
 8. Lava (```mod_lava.py```)
+
     Simulates a lava lamp effect with flowing, molten colors.
 
     * Features:
         * Sinusoidal color calculations.
         * Continuous color flow.
 
+    ![Lava](screenshots/Simulator_Lava.png)
+
 9. Fireplace (```mod_fireplace.py```)
+
     Mimics the appearance of a cozy fireplace with flickering flames.
 
     * Features:
         * Sparks and embers.
         * Low-pass filtering for smoother visuals.
 
+    ![Fireplace](screenshots/Simulator_FirePlace.png)
+
 10. Rainbow (```mod_rainbow.py```)
+
     Displays a vibrant rainbow that shifts colors across the LED matrix.
 
     * Features:
         * Hue shifting for dynamic colors.
         * Increased saturation and brightness.
 
-11. Santa Tree (```mod_santatree_16x16.py```)
+    ![Rainbow](screenshots/Simulator_Rainbow.png)
+
+11. Maze (```mod_maze.py```)
+
+    Generates a randomized, guaranteed-solvable maze inside the inner 14x14 area (outer border left unused so overlays like the clock don't obscure it). The maze uses a randomized depth-first algorithm on a cell grid; the program finds a path using A* and animates a red pixel traversing that path with a fading red tail.
+
+    * Features:
+        * Maze carved inside inner area (no border cells used).
+        * A* pathfinding to find a solution from entrance (1,1) to exit (xres-2,yres-2).
+        * Animated red head that walks the path; trailing glowing tail that fades.
+        * Automatically regenerates a new solvable maze after completion.
+
+    ![Maze](screenshots/Simulator_Maze.png)
+
+12. Santa Tree (```mod_santatree_16x16.py```)
+
     Shows a festive Christmas tree with sparkling lights.
 
     * Features:
         * Predefined tree pattern.
-        * Randomly changing sparkles
-    * Minus Button (GPIO 9):
-        * Module Selection Mode: Switch to the previous module.
-        * Brightness Adjustment Mode: Decrease brightness.
-        
+        * Randomly changing sparkles.
+
+    ![SantaTree](screenshots/Simulator_SanTree.png)
 # Customization
 * Add New Modules:
     * Create a new ```mod_yourmodule.py``` file.
