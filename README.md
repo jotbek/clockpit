@@ -110,7 +110,7 @@ The table matches the selection order in `main.py`.
 | Rainbow | [source](animations/mod_rainbow.py) | Moving hue gradients with integer interpolation | [image](docs/screenshots/Simulator_Rainbow.png) |
 | Maze | [source](animations/mod_maze.py) | Solvable mazes, color-cycling walls, a moving red trail | [image](docs/screenshots/Simulator_Maze.png) |
 | Santa Tree | [source](animations/mod_santatree_16x16.py) | Static tree with incrementally updated sparkling lights | [image](docs/screenshots/Simulator_SanTree.png) |
-| Mandelbrot | [source](animations/mod_mandelbrot.py) | Tracks visible fractal boundaries, cycles four starting targets, recovers from empty areas | |
+| Mandelbrot | [source](animations/mod_mandelbrot.py) | Tracks visible fractal boundaries, cycles four starting targets, recovers from empty areas | [image](docs/screenshots/Simulator_Mandelbrot.png) |
 
 Game of Life and Color Vortex both accept a constructor parameter `delay=0.1`, in seconds, giving at most approximately 10 updates per second at normal simulation speed. Increase it to slow frame generation:
 
