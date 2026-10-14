@@ -29,7 +29,7 @@ class SimulatorRuntime:
         self.error = None
         self.worker = None
         self.app = None
-        self.module_count = 13
+        self.module_count = 14
         self.commands = deque()
         self.serial = 0
         self.acknowledged = 0

@@ -147,7 +147,7 @@ class RuntimeInteractionTests(unittest.TestCase):
         configurations = 0
         for speed in (SPEED_OPTIONS[0], 1.0, SPEED_OPTIONS[-1]):
             self.runtime.set_speed(speed)
-            for index in range(13):
+            for index in range(self.runtime.module_count):
                 for mode in range(3):
                     for brightness in (0, 255):
                         with self.subTest(speed=speed, module=index, mode=mode, brightness=brightness):
@@ -158,7 +158,7 @@ class RuntimeInteractionTests(unittest.TestCase):
                             self.assertEqual((state['module'], state['mode'], state['brightness']),
                                              (index, mode, brightness))
                             configurations += 1
-        self.assertEqual(configurations, 234)
+        self.assertEqual(configurations, self.runtime.module_count * 18)
         self.assertGreater(self.runtime.snapshot()['frames'], configurations)
 
     def test_minimum_speed_commands_do_not_wait_for_clock_delay(self):
@@ -179,7 +179,7 @@ class RuntimeInteractionTests(unittest.TestCase):
         self.assertEqual((state['module'], state['mode'], state['brightness']), (5, 1, 96))
 
     def test_invalid_commands_cannot_crash_worker(self):
-        for command, value in (('module', -1), ('module', 13), ('module', 'one'),
+        for command, value in (('module', -1), ('module', self.runtime.module_count), ('module', 'one'),
                                ('mode', 3), ('button', 'unknown'), ('unknown', 0)):
             with self.assertRaises(ValueError):
                 self.runtime.post(command, value)

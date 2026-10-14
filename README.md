@@ -1,6 +1,6 @@
 # Clockpit
 
-Clockpit runs a digital clock and 12 animations on a 16x16 RGB LED matrix driven by a Raspberry Pi Pico W and MicroPython. The primary target is efficient execution on RP2040: small reusable buffers, bounded animation state, and loading only the selected animation into RAM.
+Clockpit runs a digital clock and 13 animations on a 16x16 RGB LED matrix driven by a Raspberry Pi Pico W and MicroPython. The primary target is efficient execution on RP2040: small reusable buffers, bounded animation state, and loading only the selected animation into RAM.
 
 ## Project layout
 
@@ -101,6 +101,7 @@ The table matches the selection order in `main.py`.
 | Clock | [source](animations/mod_clock.py) | Hours/minutes, a fading seconds border, local time conversion | [image](docs/screenshots/Simulator_Clock.png) |
 | Fire Plasma | [source](animations/mod_fireplasma.py) | Fire propagation using a compact fixed-point heat map | [image](docs/screenshots/Simulator_FirePlasma.png) |
 | Game of Life | [source](animations/mod_gameoflife.py) | Conway's cellular automaton with periodic resets | [image](docs/screenshots/Simulator_GameOfLife.png) |
+| Donut | [source](animations/mod_donut.py) | A slim 3D torus rotating around two axes, with grayscale lighting, perspective, and depth buffering | [image](docs/screenshots/Simulator_Donut.png) |
 | Spiral | [source](animations/mod_spiral.py) | Colored and erasing markers following a spiral path | [image](docs/screenshots/Simulator_Spiral.png) |
 | Matrix Rain | [source](animations/mod_matrixrain.py) | Falling green trails with fading highlights | [image](docs/screenshots/Simulator_MatrixRain.png) |
 | Ray Bouncer | [source](animations/mod_raybouncer.py) | Bouncing markers, short fading trails, occasional bursts | [image](docs/screenshots/Simulator_Bounce.png) |
@@ -121,6 +122,14 @@ ColorVortex(16, 16, speed=0.2, delay=0.2)
 
 Vortex's `speed` controls rotation per frame; `delay` controls the time between frames. The current loader passes only `(xres, yres)`, so `main.py` uses constructor defaults. To change delays with this loader, edit the defaults in the animation files; explicit overrides in `main.py` require extending `create_module()` to forward constructor parameters. Game of Life retains its separate 0.5-second reset pause.
 
+Donut is the fourth module in the selection order. It is inspired by the classic [donut animation](https://www.a1k0n.net/2011/07/20/donut-math.html) and the author's [fixed-point approach for limited hardware](https://www.a1k0n.net/2021/01/13/optimizing-donut.html). The torus has a major radius of 2.0 and a slimmer tube radius of 0.6, with grayscale lighting and a depth buffer for occlusion.
+
+Its constructor defaults to `delay=0.0` seconds and `speed=0.04` radians per frame; the second rotation axis moves at 65% of that speed. There is no intentional animation delay. The frame rate and rotation per second depend on rendering and LED output time. Increase `speed` for more rotation per frame, or `delay` to insert a pause between frames.
+
+The Pico renderer uses the [MicroPython Viper emitter](https://docs.micropython.org/en/latest/reference/speed_python.html#the-viper-code-emitter) to compile its drawing loop to machine code. Geometry and lighting use Q12 fixed-point integers; a 192-entry reciprocal table replaces per-point division during perspective projection. The surface tables contain 48 ring steps and 24 tube steps (1152 samples), with back-facing samples rejected before projection and samples hidden by the depth buffer skipped before shading. Only the rotation coefficients use floating-point trigonometry per frame. Grayscale is expanded to RGB once per pixel after depth resolution.
+
+The renderer reuses all buffers and tables. At 16x16, their payload totals **2066 bytes**: 768 bytes for RGB, 512 for depth, 192 for ring geometry, 192 for tube geometry, 18 for rotation coefficients, and 384 for projection reciprocals. This excludes Python object overhead, compiled code, and the application's display buffers. The desktop simulator runs the same integer algorithm through a Python fallback; its timing does not measure the Pico's native execution speed. Use terminal diagnostics or the Pico profiler below for device measurements.
+
 ## Verification and profiling
 
 Run the complete regression suite from the repository root:
@@ -129,7 +138,7 @@ Run the complete regression suite from the repository root:
 python -m unittest discover -s tests -v
 ```
 
-The tests cover firmware rendering and animation state, float32 Mandelbrot zoom, diagnostic memory/firmware output and frame timing across tick rollover, 234 worker configurations, minimum/maximum speed, short/held inputs, failure reporting, shutdown, and 78 combinations using actual Tk widgets. GUI tests use a withdrawn test window and close it automatically; they skip when no Tk display is available. Tests do not leave the simulator running.
+The tests cover firmware rendering and animation state, float32 Mandelbrot zoom, Donut geometry/depth/grayscale rotation, diagnostic memory/firmware output and frame timing across tick rollover, 252 worker configurations, minimum/maximum speed, short/held inputs, failure reporting, shutdown, and 84 combinations using actual Tk widgets. GUI tests use a withdrawn test window and close it automatically; they skip when no Tk display is available. Tests do not leave the simulator running.
 
 Desktop CPU/heap comparison:
 

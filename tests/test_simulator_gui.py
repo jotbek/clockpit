@@ -43,7 +43,7 @@ class SimulatorGuiTests(unittest.TestCase):
             self.window.refresh_speed()
             self.assertEqual(str(self.window.speed_down['state']), 'disabled' if speed == 0.01 else 'normal')
             self.assertEqual(str(self.window.speed_up['state']), 'disabled' if speed == 50 else 'normal')
-            for index in range(13):
+            for index in range(self.runtime.module_count):
                 for mode in range(3):
                     self.window.module_combo.current(index)
                     self.window.module_combo.event_generate('<<ComboboxSelected>>')
@@ -56,7 +56,7 @@ class SimulatorGuiTests(unittest.TestCase):
                     self.assertEqual(self.runtime.snapshot()['mode'], mode)
                     self.assertIsNone(self.runtime.snapshot()['error'])
                     cases += 1
-        self.assertEqual(cases, 78)
+        self.assertEqual(cases, self.runtime.module_count * 6)
         self.assertGreater(self.window.preview_frames, 0)
 
     def test_short_mouse_click_keyboard_activation_and_hold_release(self):

@@ -45,6 +45,7 @@ modules = [
     ('animations.mod_clock', 'Clock', xres, yres),
     ('animations.mod_fireplasma', 'FirePlasma', xres, yres),
     ('animations.mod_gameoflife', 'GameOfLife', xres, yres),
+    ('animations.mod_donut', 'Donut', xres, yres),
     ('animations.mod_spiral', 'Spiral', xres, yres),
     ('animations.mod_matrixrain', 'MatrixRain', xres, yres),
     ('animations.mod_raybouncer', 'Bounce', xres, yres),
@@ -54,7 +55,7 @@ modules = [
     ('animations.mod_rainbow', 'Rainbow', xres, yres),
     ('animations.mod_maze', 'Maze', xres, yres),
     ('animations.mod_santatree_16x16', 'Santree', xres, yres),
-    ('animations.mod_mandelbrot', 'Mandelbrot', xres, yres)
+    ('animations.mod_mandelbrot', 'Mandelbrot', xres, yres),
 ]
 
 # BUTTONS PIN configuration:

@@ -25,6 +25,7 @@ def run(frames=100):
         ('animations.mod_lava', 'Lava'), ('animations.mod_fireplace', 'Fireplace'),
         ('animations.mod_rainbow', 'Rainbow'), ('animations.mod_maze', 'Maze'),
         ('animations.mod_santatree_16x16', 'Santree'),
+        ('animations.mod_donut', 'Donut'),
     )
     print('module, us/frame, free at start, free with state, minimum free')
     for module_name, class_name in specs:

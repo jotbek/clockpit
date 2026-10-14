@@ -29,6 +29,7 @@ MODULES = (
     ('animations.mod_lava', 'Lava'), ('animations.mod_fireplace', 'Fireplace'),
     ('animations.mod_rainbow', 'Rainbow'), ('animations.mod_maze', 'Maze'),
     ('animations.mod_santatree_16x16', 'Santree'),
+    ('animations.mod_donut', 'Donut'),
 )
 
 
