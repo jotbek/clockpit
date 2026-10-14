@@ -1,209 +1,162 @@
-# CLOCKPIT
+# Clockpit
 
-This project showcases a variety of animations and functionalities on a 16x16 LED matrix using a Raspberry Pi Pico running MicroPython. It includes multiple modules that display different animations, a digital clock with daylight saving time adjustments for Poland, and interactive controls via buttons.
+Clockpit runs a digital clock and 12 animations on a 16x16 RGB LED matrix driven by a Raspberry Pi Pico W and MicroPython. The primary target is efficient execution on RP2040: small reusable buffers, bounded animation state, and loading only the selected animation into RAM.
 
-# Features
-* Multiple Animations: Includes various visual effects like Fire Plasma, Game of Life, Rainbow, and more.
-* Digital Clock: Displays the current time with automatic adjustment for daylight saving time in Poland.
-* Interactive Controls: Three buttons allow users to switch between modules and adjust brightness.
-* Optimized Performance: Uses overclocking and efficient coding practices for smooth animations.
+## Project layout
 
-# Hardware Requirements
-* Raspberry Pi Pico: The main microcontroller running MicroPython.
-* 16x16 LED Matrix: A matrix of RGB LEDs to display animations. (TODO: add more info)
-* Three Buttons: For user interaction—module selection and brightness control.
-* Wi-Fi Module (Optional): For time synchronization via NTP (requires Wi-Fi credentials).
-
-# Setup Instructions
-1. Clone the Repository:
-
-```bash
-git clone https://github.com/yourusername/led-matrix-pico.git
+```text
+main.py                     Pico startup entry point and application loop
+core/                       Device initialization, rendering, colors, fonts, loading
+animations/                 Individual animation modules; imported on demand
+simulator/                  Desktop Tkinter GUI and simulation runtime
+tests/                     Firmware and simulator regression tests
+tools/                     Desktop benchmark and optional Pico profiler
+docs/screenshots/          Animation previews
+secrets.py                  Local Wi-Fi credentials; ignored by Git
 ```
 
-2. Prepare the Raspberry Pi Pico:
-    * Install MicroPython on your Pico if not already done.
-    * Copy all .py files to the Pico's filesystem.
+MicroPython supports directories and Python packages. Keep `main.py` at the device filesystem root and preserve `core/` and `animations/`, including their `__init__.py` files. Package markers do not import every animation. The desktop simulator, tests, tools, and documentation are not firmware dependencies.
 
-3. Configure Wi-Fi (Optional for Clock Module):
-    * Create a ```secrets.py``` file on the Pico with your Wi-Fi credentials:
+## Hardware and deployment
+
+- Raspberry Pi Pico W running MicroPython.
+- A 16x16 RGB NeoPixel matrix on GPIO 22, with serpentine wiring.
+- Active-low buttons on GPIO 13 (Up), GPIO 9 (Down), and GPIO 5 (Mode), using pull-ups.
+- Wi-Fi credentials for the current startup sequence, which connects and synchronizes the RTC using NTP.
+
+Copy these files and directories to the Pico filesystem:
+
+```text
+/main.py
+/core/__init__.py
+/core/init.py
+/core/loading.py
+/core/display.py
+/core/colors.py
+/core/helpers.py
+/animations/__init__.py
+/animations/mod_*.py
+/secrets.py
+```
+
+Do not copy `simulator/`, `tests/`, `docs/`, or the desktop benchmark to the device. Create `secrets.py` locally:
 
 ```python
 wifi_name = 'your_ssid'
 wifi_pass = 'your_password'
 ```
 
-4. Wiring:
-    * Connect the LED matrix to the Pico according to your matrix's specifications.
-    * Connect the three buttons to GPIO pins 5, 9, and 13 with pull-up resistors.
+Reset the board after updating the package layout. MicroPython runs `main.py` automatically. The default brightness is 96/255, the display is 16x16, and initialization requests a 250 MHz CPU clock; configure these values in `main.py` and `core/init.py`. Clock rendering converts the NTP-synchronized UTC RTC to Polish local time.
 
-5. Run the Program:
-    * Reset the Pico or run `main.py` on the device to start the program.
-    * To run and debug the project on a desktop without hardware, use the included GUI simulator.
+## Controls
 
-6. Simulator (Desktop GUI) — quick start:
-    * Requirements: Python 3 (3.8+ recommended) and `tkinter` installed (usually part of standard CPython).
-    * Run the simulator from the repository root:
-      ```bash
-      python simulator_gui.py
-      ```
-    * Features:
-      - Renders the 16x16 LED matrix in a window (uses `main.mapPixel` for correct serpentine mapping).
-      - Simulates three buttons:
-        - Up (GPIO 13) — "Up" button in the GUI
-        - Down (GPIO 9) — "Down" button in the GUI
-        - Mode (GPIO 5) — "Mode" button in the GUI (click to cycle modes)
-      - Module selection combobox: pick any installed module to switch immediately.
-      - Speed control: `Speed -` / `Speed +` buttons change simulation speed (discrete options).
-      - Exit button to stop the simulator. **Note:** the GUI Reset button has been removed; to restart the simulator with default settings, re-run `python simulator_gui.py`.
-      - The GUI uses lightweight stubs for `neopixel`, `machine.Pin`, and `gc` so `main.py` runs unchanged.
-    * How to use buttons: Click and hold a GUI button to simulate a momentary hardware press.
-    * Notes for developers:
-      - The simulator registers a callback when `NeoPixel.write()` is called and updates the GUI.
-      - Use the combobox or the hardware-mode button behavior (Mode/Up/Down) to test interactions.
+Mode cycles through three settings:
 
+| Mode | Up / Down | Display |
+| --- | --- | --- |
+| 0 | Select the next/previous animation | Selected animation |
+| 1 | Adjust brightness in steps of 4, clamped to 0..255 | Selected animation with temporary percentage feedback |
+| 2 | Select the next/previous animation | Selected animation with a transparent clock overlay |
 
-# Modules Description
+A Mode press advances once. Up/Down repeat after an initial hold delay; opposite hardware buttons cancel each other. Selection stays at the first or last module at the corresponding boundary. Temporary symbols and percentages restore the background instead of erasing incremental animations. Brightness changes also update retained pixels, including recovery from brightness zero.
 
-This project includes the following modules (order matches `main.py`):
+## Terminal diagnostics
 
-1. Clock (```mod_clock.py```) 
+At startup, the board reports its installed MicroPython firmware build and board identifier. Configuration logs include current Python heap allocation (used/total/free and percentage), CPU frequency, the selected module, brightness, and the last frame's delay in seconds. Heap allocation covers Python-managed memory, not all physical RAM, and logging does not force garbage collection.
 
-    Displays the current time, adjusting automatically for daylight saving time in Poland (CEST/CET). It shows hours and minutes with a seconds indicator around the border.
+With `DEBUG_STATS = True` in `main.py` (the default), periodic logs also show:
 
-    * Features:
-        * Automatic DST adjustment.
-        * Visual seconds indicator.
-        * Customizable colors.
+- `FPS (updates)`: animation frames generated per second, including updates that do not write new pixels.
+- `render avg/max`: average and maximum frame preparation time in milliseconds, including generation, rendering, clock overlay, and LED output.
+- `render share`: percentage of elapsed time spent preparing frames. This measures animation activity, not total CPU utilization; controls, feedback banners, and intentional delays are excluded from preparation time.
 
-    ![Clock](screenshots/Simulator_Clock.png)
+`STATS_INTERVAL_US = 5000000` sets a five-second reporting interval; reports are emitted after a frame's delay completes. Changing the animation resets the timing window. Set `DEBUG_STATS = False` to disable periodic timing reports; startup and configuration logs remain enabled.
 
-2. Fire Plasma (```mod_fireplasma.py```) 
+In the simulator, heap values are synthetic and explicitly labeled, CPU frequency and board firmware are unavailable, and the host Python version is reported instead. Timing statistics use real elapsed time independently of simulation speed. Logs also appear at startup and when controls change the configuration.
 
-    Creates a dynamic fire-like plasma effect using heat maps and color gradients.
+## Desktop simulator
 
-    * Features:
-        * Realistic fire animation.
-        * Configurable fire spawn rate and damping factor.
+Requirements: Python 3.8 or later and Tkinter. No Wi-Fi or Pico hardware is needed. Run from the repository root:
 
-    ![FirePlasma](screenshots/Simulator_FirePlasma.png)
+```bash
+python -m simulator.gui
+```
 
-3. Game of Life (```mod_gameoflife.py```)
+- Use Up, Down, and Mode for the same actions as the physical buttons. Short clicks are queued reliably; holding Up/Down repeats the action. Keyboard activation works as well.
+- The module combobox selects an animation directly in any mode. Pending selections stay visible until the worker acknowledges them.
+- Speed - / Speed + select values from **0.01x to 50x**, clamped at both ends. Buttons are disabled at their respective limits.
+- Speed scales both animation delays and its virtual clock, including timed events and the clock display. CPU-heavy animations still depend on available desktop CPU time.
+- Changing speed or submitting a control wakes the worker immediately, including while it waits at 0.01x. Feedback banners use real time, rather than taking 50 seconds at minimum speed.
+- Tkinter displays the newest immutable frame at approximately 30 FPS. Older previews are replaced, not queued indefinitely. All widget updates and Tk object garbage collection stay on the GUI thread.
+- Worker errors appear in the status line. Exit or the window close button interrupts waiting, joins the worker, and closes the window cleanly.
 
-    Implements Conway's Game of Life with evolving cellular automata patterns.
+Importing `simulator.gui` does not start the application. Simulation stubs are installed only while the runtime is active and are restored on shutdown. Synthetic desktop heap figures are not measurements of Pico RAM.
 
-    * Features:
-        * Random initial states.
-        * Automatic reset after a set time.
+## Animations
 
-    ![GameOfLife](screenshots/Simulator_GameOfLife.png)
+The table matches the selection order in `main.py`.
 
-4. Spiral (```mod_spiral.py```)
+| Module | Source | Behavior | Preview |
+| --- | --- | --- | --- |
+| Clock | [source](animations/mod_clock.py) | Hours/minutes, a fading seconds border, local time conversion | [image](docs/screenshots/Simulator_Clock.png) |
+| Fire Plasma | [source](animations/mod_fireplasma.py) | Fire propagation using a compact fixed-point heat map | [image](docs/screenshots/Simulator_FirePlasma.png) |
+| Game of Life | [source](animations/mod_gameoflife.py) | Conway's cellular automaton with periodic resets | [image](docs/screenshots/Simulator_GameOfLife.png) |
+| Spiral | [source](animations/mod_spiral.py) | Colored and erasing markers following a spiral path | [image](docs/screenshots/Simulator_Spiral.png) |
+| Matrix Rain | [source](animations/mod_matrixrain.py) | Falling green trails with fading highlights | [image](docs/screenshots/Simulator_MatrixRain.png) |
+| Ray Bouncer | [source](animations/mod_raybouncer.py) | Bouncing markers, short fading trails, occasional bursts | [image](docs/screenshots/Simulator_Bounce.png) |
+| Color Vortex | [source](animations/mod_vortex.py) | Rotating colors with precomputed angular geometry | [image](docs/screenshots/Simulator_Vortex.png) |
+| Lava | [source](animations/mod_lava.py) | Sinusoidal red/green patterns and complementary blue | [image](docs/screenshots/Simulator_Lava.png) |
+| Fireplace | [source](animations/mod_fireplace.py) | Sparks and filtered flame colors | [image](docs/screenshots/Simulator_FirePlace.png) |
+| Rainbow | [source](animations/mod_rainbow.py) | Moving hue gradients with integer interpolation | [image](docs/screenshots/Simulator_Rainbow.png) |
+| Maze | [source](animations/mod_maze.py) | Solvable mazes, color-cycling walls, a moving red trail | [image](docs/screenshots/Simulator_Maze.png) |
+| Santa Tree | [source](animations/mod_santatree_16x16.py) | Static tree with incrementally updated sparkling lights | [image](docs/screenshots/Simulator_SanTree.png) |
+| Mandelbrot | [source](animations/mod_mandelbrot.py) | Tracks visible fractal boundaries, cycles four starting targets, recovers from empty areas | |
 
-    Draws a clockwise spiral path one pixel at a time with a slowly shifting hue, creating a warm, flowing spiral effect.
+Game of Life and Color Vortex both accept a constructor parameter `delay=0.1`, in seconds, giving at most approximately 10 updates per second at normal simulation speed. Increase it to slow frame generation:
 
-    * Features:
-        * Clockwise spiral traversal from the outer frame to the center.
-        * Smooth color transitions using HSV-to-RGB conversion.
+```python
+GameOfLife(16, 16, delay=0.2)
+ColorVortex(16, 16, speed=0.2, delay=0.2)
+```
 
-    ![Spiral](screenshots/Simulator_Spiral.png)
+Vortex's `speed` controls rotation per frame; `delay` controls the time between frames. The current loader passes only `(xres, yres)`, so `main.py` uses constructor defaults. To change delays with this loader, edit the defaults in the animation files; explicit overrides in `main.py` require extending `create_module()` to forward constructor parameters. Game of Life retains its separate 0.5-second reset pause.
 
-5. Matrix Rain (```mod_matrixrain.py```)
+## Verification and profiling
 
-    Recreates the "digital rain" effect from the Matrix movies.
+Run the complete regression suite from the repository root:
 
-    * Features:
-        * Falling green code streams.
-        * Adjustable speed and color intensity.
+```bash
+python -m unittest discover -s tests -v
+```
 
-    ![MatrixRain](screenshots/Simulator_MatrixRain.png)
+The tests cover firmware rendering and animation state, float32 Mandelbrot zoom, diagnostic memory/firmware output and frame timing across tick rollover, 234 worker configurations, minimum/maximum speed, short/held inputs, failure reporting, shutdown, and 78 combinations using actual Tk widgets. GUI tests use a withdrawn test window and close it automatically; they skip when no Tk display is available. Tests do not leave the simulator running.
 
-6. Ray Bouncer (```mod_raybouncer.py``` / class `Bounce`)
+Desktop CPU/heap comparison:
 
-    Displays bouncing "bouncers" that change directions upon hitting the edges of the matrix. Each bouncer leaves a fading trail as it moves across the screen.
+```bash
+python tools/benchmark_desktop.py
+python tools/benchmark_desktop.py --baseline PATH_TO_ORIGINAL_FLAT_SOURCES
+```
 
-    * Features:
-        * Multiple bouncers with different colors (e.g., red and blue).
-        * Smooth animations with fading and occasional "boom" effects.
+For actual Pico RAM and timing, stop the running firmware, copy `tools/profile_pico.py` as `/profile_pico.py`, and use the REPL:
 
-    ![Bounce](screenshots/Simulator_Bounce.png)
+```python
+import profile_pico
+profile_pico.run(1000)
+```
 
-7. Color Vortex (```mod_vortex.py``` / class `ColorVortex`)
+The profiler generates and renders frames without lighting the LEDs. It reports microseconds per frame and available heap before loading an animation, with its state allocated, and the minimum observed during the run. Desktop measurements cannot certify Pico FPS or the absence of OOM.
 
-    Displays a swirling vortex of colors that shifts hues over time, creating a mesmerizing effect.
+## Adding an animation
 
-    * Features:
-        * Smooth color transitions.
-        * Adjustable rotation speed.
+Create `animations/mod_yourmodule.py` with a class accepting `(xres, yres)`. Its `get()` method returns `(is_full_frame, delay_seconds, changes)`.
 
-    ![Vortex](screenshots/Simulator_Vortex.png)
+- Full frame: a reusable RGB `bytearray` of `xres * yres * 3` bytes, with channel offset `(x * yres + y) * 3`. Legacy `frame[x][y]` matrices are also supported.
+- Incremental frame: a sequence of `(x, y, (r, g, b))` entries. Omitted pixels keep their previous values.
+- The existing `delay_ms` variable name represents **seconds**, matching `time.sleep()`.
 
-8. Lava (```mod_lava.py```)
+Register `('animations.mod_yourmodule', 'YourModule', xres, yres)` in `main.py`. Keep state and output buffers bounded. On switches, the loader releases both the module cache entry and its parent package attribute before allocating another animation.
 
-    Simulates a lava lamp effect with flowing, molten colors.
+## License
 
-    * Features:
-        * Sinusoidal color calculations.
-        * Continuous color flow.
-
-    ![Lava](screenshots/Simulator_Lava.png)
-
-9. Fireplace (```mod_fireplace.py```)
-
-    Mimics the appearance of a cozy fireplace with flickering flames.
-
-    * Features:
-        * Sparks and embers.
-        * Low-pass filtering for smoother visuals.
-
-    ![Fireplace](screenshots/Simulator_FirePlace.png)
-
-10. Rainbow (```mod_rainbow.py```)
-
-    Displays a vibrant rainbow that shifts colors across the LED matrix.
-
-    * Features:
-        * Hue shifting for dynamic colors.
-        * Increased saturation and brightness.
-
-    ![Rainbow](screenshots/Simulator_Rainbow.png)
-
-11. Maze (```mod_maze.py```)
-
-    Generates a randomized, guaranteed-solvable maze inside the inner 14x14 area (outer border left unused so overlays like the clock don't obscure it). The maze uses a randomized depth-first algorithm on a cell grid; the program finds a path using A* and animates a red pixel traversing that path with a fading red tail.
-
-    * Features:
-        * Maze carved inside inner area (no border cells used).
-        * A* pathfinding to find a solution from entrance (1,1) to exit (xres-2,yres-2).
-        * Animated red head that walks the path; trailing glowing tail that fades.
-        * Automatically regenerates a new solvable maze after completion.
-
-    ![Maze](screenshots/Simulator_Maze.png)
-
-12. Santa Tree (```mod_santatree_16x16.py```)
-
-    Shows a festive Christmas tree with sparkling lights.
-
-    * Features:
-        * Predefined tree pattern.
-        * Randomly changing sparkles.
-
-    ![SantaTree](screenshots/Simulator_SanTree.png)
-# Customization
-* Add New Modules:
-    * Create a new ```mod_yourmodule.py``` file.
-    * Implement a class with a ```get()``` method returning ```(is_full_frame, delay_ms, changes)```.
-    * Add your module to the ```modules``` list in ```main.py```.
-
-* Adjust Brightness:
-    * Modify the ```intense``` and ```intense_step``` variables in ```main.py``` for default brightness settings.
-
-* Change Wi-Fi Settings:
-    * Update the ```secrets.py``` file with new credentials.
-
-* Overclocking:
-    * The Pico is overclocked to 250 MHz by default.
-    * Adjust ```overclock_freq``` in ```init.py``` if necessary.
-
-# License
-This project is licensed under the [MIT License](https://opensource.org/licenses/MIT).
+This project uses the [MIT License](https://opensource.org/licenses/MIT).

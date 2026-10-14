@@ -5,24 +5,16 @@
 # wifi_pass = 'password'
 #
 from machine import Pin
+import machine
 from neopixel import NeoPixel
-import init
+from core import init
 import time
 import gc
+import sys
+from core.display import MatrixDisplay
+from core.loading import create_module, unload_module
 
-from mod_raybouncer import Bounce
-from mod_clock import Clock
-from mod_santatree_16x16 import Santree
-from mod_matrixrain import MatrixRain
-from mod_lava import Lava
-from mod_fireplace import Fireplace
-from mod_fireplasma import FirePlasma
-from mod_gameoflife import GameOfLife
-from mod_rainbow import Rainbow
-from mod_vortex import ColorVortex
-from mod_spiral import Spiral
-from mod_maze import Maze
-import helpers
+from core import helpers
 
 # LED matrix configuration
 intense = 96  # 0 - 255
@@ -32,23 +24,37 @@ yres = 16
 ledControlPin = 22
 frame = NeoPixel(Pin(ledControlPin), xres * yres)
 frame.write()
+display = MatrixDisplay(frame, xres, yres)
+pending_module = None
 current_module = None
 clock_module = None
+control_hook = None
+ui_sleep = getattr(time, 'ui_sleep', time.sleep)
+button_mask = 0
+plus_repeat_at = 0
+minus_repeat_at = 0
+ticks_us = getattr(time, 'ticks_us', lambda: int(time.time() * 1000000))
+ticks_diff = getattr(time, 'ticks_diff', lambda end, start: end - start)
+ticks_add = getattr(time, 'ticks_add', lambda current, delta: current + delta)
+stats_ticks_us = getattr(time, 'stats_ticks_us', ticks_us)
+stats_ticks_diff = getattr(time, 'stats_ticks_diff', ticks_diff)
+SIMULATOR = sys.implementation.name != 'micropython'
 
 # MODULES:
 modules = [
-    (Clock, xres, yres),
-    (FirePlasma, xres, yres),
-    (GameOfLife, xres, yres),
-    (Spiral, xres, yres),
-    (MatrixRain, xres, yres),
-    (Bounce, xres, yres),
-    (ColorVortex, xres, yres),
-    (Lava, xres, yres),
-    (Fireplace, xres, yres),
-    (Rainbow, xres, yres),
-    (Maze, xres, yres),
-    (Santree, xres, yres),
+    ('animations.mod_clock', 'Clock', xres, yres),
+    ('animations.mod_fireplasma', 'FirePlasma', xres, yres),
+    ('animations.mod_gameoflife', 'GameOfLife', xres, yres),
+    ('animations.mod_spiral', 'Spiral', xres, yres),
+    ('animations.mod_matrixrain', 'MatrixRain', xres, yres),
+    ('animations.mod_raybouncer', 'Bounce', xres, yres),
+    ('animations.mod_vortex', 'ColorVortex', xres, yres),
+    ('animations.mod_lava', 'Lava', xres, yres),
+    ('animations.mod_fireplace', 'Fireplace', xres, yres),
+    ('animations.mod_rainbow', 'Rainbow', xres, yres),
+    ('animations.mod_maze', 'Maze', xres, yres),
+    ('animations.mod_santatree_16x16', 'Santree', xres, yres),
+    ('animations.mod_mandelbrot', 'Mandelbrot', xres, yres)
 ]
 
 # BUTTONS PIN configuration:
@@ -57,36 +63,42 @@ minusButton = Pin(9, Pin.IN, Pin.PULL_UP)
 modeButton = Pin(5, Pin.IN, Pin.PULL_UP)
 
 
-def delete_module(module):
-    del module
-    gc.collect()
+def request_module(index):
+    # Simulator/UI requests are consumed by the rendering thread.
+    global pending_module
+    pending_module = index
 
 
-def create_module(module_class, xres, yres):
-    new_module = module_class(xres, yres)
+def select_module(index):
+    global selected_module, current_module, clock_module
+    if not 0 <= index < len(modules):
+        return
+    previous_name = modules[selected_module][0]
+    current_module = None
+    if modules[index][1] == 'Clock':
+        clock_module = None
+        display.overlay_backup = None
+    if previous_name != 'animations.mod_clock' or clock_module is None:
+        unload_module(previous_name)
     gc.collect()
-    return new_module
+    selected_module = index
+    current_module = create_module(*modules[index])
+    clear_board()
+    reset_stats()
+    print_log()
 
 
 def mapPixel(x, y):
-    if y % 2 == 1:
-        return xres * y + x
-    else:
-        return xres * y + xres - 1 - x
+    return display.map_pixel(x, y)
 
 
-def light(x, y, r, g, b, intense_override=None):    
-    intense_val = intense
-    if intense_override is not None:
-        intense_val = intense_override
-    frame[mapPixel(x, y)] = (int(r*(intense_val/255)), int(g*(intense_val/255)), int(b*(intense_val/255)))
+def light(x, y, r, g, b, intense_override=None):
+    brightness = intense if intense_override is None else intense_override
+    display.light(x, y, r, g, b, brightness, remember=False)
 
 
 def clear_board():
-    for y in range(yres):
-        for x in range(xres):
-            if frame[mapPixel(x, y)] != (0, 0, 0):
-                light(x, y, 0, 0, 0)
+    display.clear()
 
 
 def display_symbol16x16(symbol_name, color, duration):
@@ -94,6 +106,7 @@ def display_symbol16x16(symbol_name, color, duration):
     if symbol is None:
         return
 
+    previous = bytes(frame.buf)
     # Display the symbol starting from (0, 0)
     for y in range(yres):
         for x in range(xres):
@@ -102,8 +115,9 @@ def display_symbol16x16(symbol_name, color, duration):
             else:
                 light(x, y, 0, 0, 0)
     frame.write()
-    time.sleep(duration)
-    clear_board()
+    ui_sleep(duration)
+    frame.buf[:] = previous
+    frame.write()
 
 
 def display_percentage(percent, color, duration=0.1):
@@ -118,12 +132,16 @@ def display_percentage(percent, color, duration=0.1):
     start_x = (xres - total_width) // 2
     start_y = (yres - 5) // 2
 
-    # save previous pixels in bounding box
-    prev = {}
+    # Bounded packed backup instead of a dict of coordinate/color tuples.
+    prev = bytearray(total_width * 5 * 3)
+    saved = 0
     for x in range(start_x, start_x + total_width):
         for y in range(start_y, start_y + 5):
-            if 0 <= x < xres and 0 <= y < yres:
-                prev[(x, y)] = frame[mapPixel(x, y)]
+            offset = mapPixel(x, y) * 3
+            prev[saved] = frame.buf[offset]
+            prev[saved + 1] = frame.buf[offset + 1]
+            prev[saved + 2] = frame.buf[offset + 2]
+            saved += 3
 
     # draw digits
     x_cursor = start_x
@@ -145,62 +163,130 @@ def display_percentage(percent, color, duration=0.1):
                 light(x_cursor + gx, start_y + gy, *color, intense_override=128)
 
     frame.write()
-    time.sleep(duration)
+    ui_sleep(duration)
 
-    # restore previous pixels directly (avoid re-scaling)
-    for pos, col in prev.items():
-        x, y = pos
-        frame[mapPixel(x, y)] = col
+    saved = 0
+    for x in range(start_x, start_x + total_width):
+        for y in range(start_y, start_y + 5):
+            offset = mapPixel(x, y) * 3
+            frame.buf[offset] = prev[saved]
+            frame.buf[offset + 1] = prev[saved + 1]
+            frame.buf[offset + 2] = prev[saved + 2]
+            saved += 3
     frame.write()
 
 
-def print_log():
-    print("mode: ", mode, " | selected module: ", selected_module, " | intense: ", intense, " | delay: ", delay_ms)
+def print_system_info():
+    if SIMULATOR:
+        print('runtime: {} {} | Pico firmware: unavailable in simulator'.format(
+            sys.implementation.name, sys.version.replace('\n', ' ')))
+    else:
+        import os
+        info = os.uname()
+        print('firmware: MicroPython {} | board: {}'.format(info.version, info.machine))
+
+
+def print_log(elapsed_us=0):
+    # Read the current heap without forcing a collection or changing frame timing.
+    used = gc.mem_alloc()
+    free = gc.mem_free()
+    total = used + free
+    percent = used * 100 / total if total > 0 else 0
+    memory_label = 'RAM (heap, simulated)' if SIMULATOR else 'RAM (Python heap)'
+    cpu_freq = getattr(machine, 'freq', None)
+    frequency = '{:.0f} MHz'.format(cpu_freq() / 1000000) if cpu_freq else 'n/a'
+    log = ('mode: {} | module: {} ({}) | intense: {} | delay: {:.3f} s'
+           ' | {}: {:.1f}/{:.1f} KiB used ({:.1f}%), {:.1f} KiB free | CPU: {}').format(
+        mode, selected_module, modules[selected_module][1], intense, delay_ms,
+        memory_label, used / 1024, total / 1024, percent, free / 1024, frequency)
+    if elapsed_us > 0 and counter:
+        log += (' | FPS (updates): {:.1f} | render avg/max: {:.2f}/{:.2f} ms'
+                ' | render share: {:.1f}%').format(
+            counter * 1000000 / elapsed_us, render_time_us / counter / 1000,
+            peak_render_time_us / 1000, render_time_us * 100 / elapsed_us)
+    print(log)
+
+
+def reset_stats():
+    global counter, start_time, render_time_us, peak_render_time_us
+    counter = render_time_us = peak_render_time_us = 0
+    start_time = stats_ticks_us() if DEBUG_STATS else 0
+
+
+def set_mode(value):
+    global mode, clock_module
+    if value not in (0, 1, 2):
+        raise ValueError('Mode must be 0, 1, or 2')
+    if value == mode:
+        return
+    mode = value
+    if mode != 2:
+        clock_module = None
+        if modules[selected_module][0] != 'animations.mod_clock' and 'animations.mod_clock' in sys.modules:
+            unload_module('animations.mod_clock')
+        display.overlay_backup = None
+        gc.collect()
+    symbol = ('triangle_up_down', 'sun', 'clock')[mode]
+    color = (helpers.colors_rgb['green'], helpers.colors_rgb['yellow'],
+             helpers.colors_rgb['blue'])[mode]
+    display_symbol16x16(symbol, color, 0.5)
+    print_log()
+
+
+def set_brightness(value):
+    global intense
+    value = max(0, min(255, int(value)))
+    if value == intense:
+        return
+    intense = value
+    display.set_brightness(intense)
+    display_percentage(intense * 100 // 255, helpers.colors_rgb['yellow'])
+    print_log()
+
+
+def handle_control(action):
+    if action == 'mode':
+        set_mode((mode + 1) % 3)
+    elif action in ('plus', 'minus'):
+        direction = 1 if action == 'plus' else -1
+        if mode == 1:
+            set_brightness(intense + direction * intense_step)
+        else:
+            index = max(0, min(len(modules) - 1, selected_module + direction))
+            if index != selected_module:
+                select_module(index)
+    else:
+        raise ValueError('Unknown control action')
 
 
 def handle_buttons():
-    global mode, selected_module, intense, intense_step, current_module
-    if plusButton.value() == 0:
-        if mode == 0 or mode == 2:
-            selected_module += 1 if selected_module < len(modules) - 1 else 0
-            delete_module(current_module)
-            current_module = create_module(*modules[selected_module])
-            clear_board()
-            print_log()
-        elif mode == 1:
-            intense = min(255, intense + intense_step)
-            # Show brightness percent overlay in center
-            pct = int(intense * 100 / 255)
-            display_percentage(pct, helpers.colors_rgb['yellow'])
-            print_log()
-
-    if minusButton.value() == 0:
-        if mode == 0 or mode == 2:
-            selected_module -= 1 if selected_module > 0 else 0
-            delete_module(current_module)
-            current_module = create_module(*modules[selected_module])
-            clear_board()
-            print_log()
-        elif mode == 1:
-            intense = max(0, intense - intense_step)
-            # Show brightness percent overlay in center
-            pct = int(intense * 100 / 255)
-            display_percentage(pct, helpers.colors_rgb['yellow'])
-            print_log()
-
-    if modeButton.value() == 0:
-        mode = (mode + 1) % 3  # Cycle through modes 0, 1, 2
-        print("mode: ", mode, " | selected module: ", selected_module, " | intense", intense)
-
-        if mode == 0:
-            # Display the triangle symbol in green color
-            display_symbol16x16('triangle_up_down', helpers.colors_rgb['green'], 0.5)
-        elif mode == 1:
-            # Display the sun symbol in yellow color
-            display_symbol16x16('sun', helpers.colors_rgb['yellow'], 0.5)
-        elif mode == 2:
-            # Display the clock symbol in blue color
-            display_symbol16x16('clock', helpers.colors_rgb['blue'], 0.5)
+    global pending_module, button_mask, plus_repeat_at, minus_repeat_at
+    # Desktop commands run on the same thread that owns the active module.
+    if control_hook is not None:
+        control_hook()
+    if pending_module is not None:
+        index = pending_module
+        pending_module = None
+        if index != selected_module:
+            select_module(index)
+    pressed = ((plusButton.value() == 0) | ((minusButton.value() == 0) << 1)
+               | ((modeButton.value() == 0) << 2))
+    edges = pressed & ~button_mask
+    now = ticks_us()
+    # Opposite buttons cancel each other. Mode advances once per press.
+    if pressed & 3 == 1:
+        new_press = edges & 1 or button_mask & 3 == 3
+        if new_press or ticks_diff(now, plus_repeat_at) >= 0:
+            handle_control('plus')
+            plus_repeat_at = ticks_add(now, 350000 if new_press else 120000)
+    elif pressed & 3 == 2:
+        new_press = edges & 2 or button_mask & 3 == 3
+        if new_press or ticks_diff(now, minus_repeat_at) >= 0:
+            handle_control('minus')
+            minus_repeat_at = ticks_add(now, 350000 if new_press else 120000)
+    if edges & 4:
+        handle_control('mode')
+    button_mask = pressed
 
 
 def free_memory():
@@ -225,54 +311,49 @@ except RuntimeError:
 selected_module = 0
 mode = 0
 current_module = create_module(*modules[selected_module])
-clock_module = create_module(Clock, xres, yres)  # Create the clock module once
-
-# To print out the number of fps module use every 'max_counter' rounds (should not impact performance)
+# The overlay clock is allocated only while mode 2 is active.
+delay_ms = 0.0
+DEBUG_STATS = True
+STATS_INTERVAL_US = 5000000
 counter = 0
-max_counter = 25
-start_time = time.time_ns()
+render_time_us = peak_render_time_us = 0
+start_time = 0
 
-while True:
-    if counter == max_counter:
-        counter = 0
-        print('fps: ', "{:.2f}".format(max_counter / ((time.time_ns() - start_time) / 1e9)))
-        start_time = time.time_ns()
-        free_memory()
+def run():
+    global counter, render_time_us, peak_render_time_us, delay_ms, clock_module
+    print_system_info()
+    print_log()
+    reset_stats()
+    while True:
+        handle_buttons()
+        if DEBUG_STATS:
+            render_started = stats_ticks_us()
+        is_full_frame, delay_ms, changes = current_module.get()
+        changed = display.apply(is_full_frame, changes, intense)
+        # Drop output references before a later module switch and its allocation.
+        changes = None
 
-    handle_buttons()
+        if mode == 2 and modules[selected_module][1] != 'Clock':
+            if clock_module is None:
+                clock_module = create_module('animations.mod_clock', 'Clock', xres, yres)
+            _, _, clock_frame = clock_module.get()
+            display.show_overlay(clock_frame, intense)
+            clock_frame = None
+        elif changed:
+            frame.write()
+        if DEBUG_STATS:
+            duration = stats_ticks_diff(stats_ticks_us(), render_started)
+            counter += 1
+            render_time_us += duration
+            peak_render_time_us = max(peak_render_time_us, duration)
+        time.sleep(delay_ms)
 
-    is_full_frame, delay_ms, changes = current_module.get()
+        if DEBUG_STATS:
+            elapsed = stats_ticks_diff(stats_ticks_us(), start_time)
+            if elapsed >= STATS_INTERVAL_US:
+                print_log(elapsed)
+                reset_stats()
 
-    if mode == 2:
-        # Overlay clock on top of current module
-        clock_is_full_frame, clock_delay_ms, clock_changes = clock_module.get()
-        # Apply the current module's changes
-        if is_full_frame:
-            for y in range(yres):
-                for x in range(xres):
-                    light(x, y, changes[x][y][0], changes[x][y][1], changes[x][y][2])
-        else:
-            for ch in changes:
-                light(ch[0], ch[1], ch[2][0], ch[2][1], ch[2][2])
-        # Then, apply the clock's changes, overwriting any overlapping pixels
-        if clock_is_full_frame:
-            for y in range(yres):
-                for x in range(xres):
-                    light(x, y, clock_changes[x][y][0], clock_changes[x][y][1], clock_changes[x][y][2])
-        else:
-            for ch in clock_changes:
-                light(ch[0], ch[1], ch[2][0], ch[2][1], ch[2][2])
-    else:
-        # Display current module normally
-        if is_full_frame:
-            for y in range(yres):
-                for x in range(xres):
-                    light(x, y, changes[x][y][0], changes[x][y][1], changes[x][y][2])
-        else:
-            for ch in changes:
-                light(ch[0], ch[1], ch[2][0], ch[2][1], ch[2][2])
 
-    frame.write()
-    time.sleep(delay_ms)
-
-    counter += 1
+if __name__ == '__main__':
+    run()

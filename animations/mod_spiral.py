@@ -1,5 +1,6 @@
 import random
 import time
+from array import array
 
 
 min_delay = 1
@@ -31,22 +32,22 @@ class Spiral:
         # Generate coordinates following a clockwise spiral from outer frame to center
         left, top = 0, 0
         right, bottom = w - 1, h - 1
-        path = []
+        path = array('H')
         while left <= right and top <= bottom:
             # top row (left->right)
             for x in range(left, right + 1):
-                path.append((x, top))
+                path.append(x * h + top)
             # right column (top+1->bottom)
             for y in range(top + 1, bottom + 1):
-                path.append((right, y))
+                path.append(right * h + y)
             if top < bottom:
                 # bottom row (right-1->left)
                 for x in range(right - 1, left - 1, -1):
-                    path.append((x, bottom))
+                    path.append(x * h + bottom)
             if left < right:
                 # left column (bottom-1->top+1)
                 for y in range(bottom - 1, top, -1):
-                    path.append((left, y))
+                    path.append(left * h + y)
             left += 1
             right -= 1
             top += 1
@@ -54,10 +55,14 @@ class Spiral:
         return path
 
     def spawn_draw(self):
+        if len(self.actors) >= 4:
+            return
         actor = {'type': 'draw', 'idx': 0, 'hue': random.randint(0, 119)}
         self.actors.append(actor)
 
     def spawn_erase(self):
+        if len(self.actors) >= 4:
+            return
         actor = {'type': 'erase', 'idx': 0}
         self.actors.append(actor)
 
@@ -79,7 +84,6 @@ class Spiral:
                     interval = random.randint(min_delay, max_delay)
                     self.next_event_time = now + interval
                     self.last_event_time = now
-                    print("Spiral event:", "erase" if self.next_is_erase else "draw", " | actors:", len(self.actors), "time: ", now, " next at ", self.next_event_time, " interval:", interval, " id:", id(self))
                     if self.next_is_erase:
                         self.spawn_erase()
                     else:
@@ -92,41 +96,27 @@ class Spiral:
         if not self.path:
             return False, self.delay, []
 
-        # Move each actor one step and collect its pixel update
-        # Draw actors first, erase actors after so erase overwrites when colliding
-        for actor in list(self.actors):
-            if actor['idx'] >= len(self.path):
-                # actor completed full loop
-                try:
-                    self.actors.remove(actor)
-                except ValueError:
-                    pass
-                continue
-
-            x, y = self.path[actor['idx']]
-
-            if actor['type'] == 'draw':
-                raw = actor['hue'] % 120
-                if raw < 60:
-                    hue = (raw * (60.0 / 60.0))
+        # Compact completed actors in place.
+        for i in range(len(self.actors) - 1, -1, -1):
+            if self.actors[i]['idx'] >= len(self.path):
+                del self.actors[i]
+        # Emit draw updates first, erasures last, without sorting/copying lists.
+        for kind in ('draw', 'erase'):
+            for actor in self.actors:
+                if actor['type'] != kind:
+                    continue
+                pixel = self.path[actor['idx']]
+                x, y = pixel // self.yres, pixel % self.yres
+                if kind == 'draw':
+                    raw = actor['hue'] % 120
+                    hue = raw if raw < 60 else raw + 240
+                    rgb = self.hsv_to_rgb(hue, 0.9, 0.6)
+                    actor['hue'] = (actor['hue'] + 1) % 120
                 else:
-                    hue = 300 + ((raw - 60) * (60.0 / 60.0))
-                rgb = self.hsv_to_rgb(hue, 0.9, 0.6)
-                changes.append([x, y, rgb])
-                actor['hue'] = (actor['hue'] + 1) % 120
-
-            elif actor['type'] == 'erase':
-                # Erase (black)
-                changes.append([x, y, [0, 0, 0]])
-
-            actor['idx'] += 1
-
-        # Ensure we apply erase updates last: separate lists
-        draw_changes = [c for c in changes if c[2] != [0, 0, 0]]
-        erase_changes = [c for c in changes if c[2] == [0, 0, 0]]
-
-        # Return draw changes then erase changes (so erase will overwrite if same pixel)
-        return False, self.delay, draw_changes + erase_changes
+                    rgb = (0, 0, 0)
+                changes.append((x, y, rgb))
+                actor['idx'] += 1
+        return False, self.delay, changes
 
     def hsv_to_rgb(self, h, s, v):
         # Same conversion used in other modules

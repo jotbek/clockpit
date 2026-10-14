@@ -36,108 +36,107 @@ class Fireplace:
         [40, 0, 0],
         [25, 0, 0],
         [10, 3, 0],
-        black_rgb   
+        black_rgb
     ]
 
-    colors_dict = {}
     frame = []
     frame_rgb = []
 
 
-    def __init__(self, xres, yres):        
+    def __init__(self, xres, yres):
         self.xres = xres
         self.yres = yres
 
-        i = 0
-        for col in self.colors_arr:
-            self.colors_dict[len(self.colors_arr) - i - 1] = col
-            i += 1
+        self.frame = [bytearray(yres) for _ in range(xres)]
+        self.frame_rgb = bytearray(xres * yres * 3)
 
-        self.frame = [[0 for x in range(self.xres)] for y in range(self.yres)]
-        self.frame_rgb = [[[0, 0, 0] for x in range(self.xres)] for y in range(self.yres)]
 
-    
     def get(self):
         self.ignite()
         self.animate()
 
         return True, 0.0, self.apply_filters_convert2rgb()
 
-    
+
     def animate(self):
         self.animate_delta(0, self.yres)
-        
+
         if random.randint(0, self.spark_fq) == 0:   # spark
-            self.frame[random.randint(0, self.xres - 1)][random.randint(0, int(self.yres / 2))] = len(self.colors_dict) - 1
-    
-    
+            self.frame[random.randint(0, self.xres - 1)][random.randint(0, self.yres // 2)] = len(self.colors_arr) - 1
+
+
     def animate_delta(self, ymin, ymax):
         # perfomance: reference locally
         _frame = self.frame
-        
+
         for y in range(ymin, ymax):
             for x in range(self.xres):
                 x_direction = random.randint(-1, 1)
-                
-                color = min(_frame[x][y], _frame[x][y] - random.randint(1, 2))
+
+                color = _frame[x][y] - random.randint(1, 2)
                 if _frame[max(x - 1, 0)][y] == 0 or x - 1 < 3:
                     color = max(color - 3, 0)
 
-                if (_frame[min(x + 1, self.xres - 1)]) == 0 or x + 1 > self.xres - 4:
-                    color = max(color - 3, 0)    
+                if _frame[min(x + 1, self.xres - 1)][y] == 0 or x + 1 > self.xres - 4:
+                    color = max(color - 3, 0)
                 self.light(x, y, x + x_direction, y - 1, color)
-            
+
 
     def apply_filters_convert2rgb(self):
         self.apply_filter(0, self.yres)
-        
+
         return self.frame_rgb
 
 
     def apply_filter(self, ymin, ymax):
         # perfomance: reference locally
-        _frame_rgb = self.frame_rgb
-        
+
         for y in range(ymin, ymax):
             for x in range(self.xres):
-                _frame_rgb[x][y] = self.apply_low_pass_filter(x, y)
+                self.apply_low_pass_filter(x, y)
 
 
     def apply_low_pass_filter(self, x, y):
         # perfomance: reference locally
-        _colors_dict = self.colors_dict
+        _colors = self.colors_arr
         _frame = self.frame
-        
+
         r, g, b = 0, 0, 0
-        
-        if self.frame[x][y] == 0:
-            return [r, g, b]
-                            
+
+        offset = (x * self.yres + y) * 3
+        out = self.frame_rgb
+        if _frame[x][y] == 0:
+            out[offset] = out[offset + 1] = out[offset + 2] = 0
+            return
+
         # sum rgb values of colors from surrounding pixels
         for dy in range(-1, 1):
-            for dx in range(-1, 1):  
+            for dx in range(-1, 1):
                 fx = x + dx
-                fy = y + dy        
+                fy = y + dy
                 if fx > 0 and fx < self.xres and fy > 0 and fy < self.yres:
-                    r += _colors_dict[_frame[fx][fy]][0]
-                    g += _colors_dict[_frame[fx][fy]][1]
-                    b += _colors_dict[_frame[fx][fy]][2]
+                    col = _colors[-1 - _frame[fx][fy]]
+                    r += col[0]
+                    g += col[1]
+                    b += col[2]
 
-        return [int(r / 9), int(g / 9), int(b / 9)]
+        out[offset] = r // 9
+        out[offset + 1] = g // 9
+        out[offset + 2] = b // 9
 
 
     def light(self, x, y, x_new, y_new, color):
         # perfomance: reference locally
         _frame = self.frame
-        
+
         if y_new >= 0 and y_new < self.yres:
             if x_new >= 0 and x_new < self.xres :
                 _frame[x_new][y_new] = max(color, 0)
-        
-        # replace old pixel            
+
+        # replace old pixel
         _frame[x][y] = max(_frame[x][y] - 1, 0)
 
 
     def ignite(self):
-        for x in range(self.min_ignite, self.max_ignite):
-            self.frame[x][self.yres - 1] = len(self.colors_dict) - 1
+        for x in range(self.min_ignite, min(self.max_ignite, self.xres)):
+            self.frame[x][self.yres - 1] = len(self.colors_arr) - 1

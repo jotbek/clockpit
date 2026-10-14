@@ -1,6 +1,8 @@
 import random
 import time
-import helpers
+from core import helpers
+from array import array
+from core.colors import hsv_into
 
 
 class Maze:
@@ -12,11 +14,12 @@ class Maze:
         # inner area excludes outer border (row/col 0 and xres-1/yres-1)
         self.min_x = 1
         self.min_y = 1
-        self.max_x = xres - 1
-        self.max_y = yres - 1
+        self.max_x = xres - 2
+        self.max_y = yres - 2
 
         # full pixel grid: True = wall, False = open
-        self.grid = [[True for _ in range(xres)] for _ in range(yres)]
+        self.grid = [bytearray(b'\x01' * xres) for _ in range(yres)]
+        self.frame = bytearray(xres * yres * 3)
 
         # compute cell grid size and set entrance/exit to actual cell pixels (diagonal inside inner area)
         w = (self.max_x - self.min_x + 1) // 2
@@ -36,8 +39,6 @@ class Maze:
 
         # hue cycling offset
         self.hue_offset = 0
-        # precompute per-wall index for color consistency
-        self.wall_index = {coord: i for i, coord in enumerate(self.walls)}
 
         # first frame should be full (render entire board)
         self._first = True
@@ -60,7 +61,7 @@ class Maze:
             h = 1
 
         # cell visited map
-        visited = [[False for _ in range(w)] for _ in range(h)]
+        visited = [bytearray(w) for _ in range(h)]
 
         def cell_to_pixel(cx, cy):
             return (self.min_x + cx * 2, self.min_y + cy * 2)
@@ -87,7 +88,7 @@ class Maze:
                     neighbors.append((nx, ny))
             if neighbors:
                 nx, ny = random.choice(neighbors)
-                # remove wall between (cx,cy) and (nx,ny) — compute pixels directly
+                # remove wall between (cx,cy) and (nx,ny); compute pixels directly
                 px, py = cell_to_pixel(cx, cy)
                 nxp, nyp = cell_to_pixel(nx, ny)
                 mx = (px + nxp) // 2
@@ -128,9 +129,8 @@ class Maze:
             self.grid[sy][sx] = False
             self.grid[ey][ex] = False
 
-            # compute wall list and index
-            self.walls = [(x, y) for y in range(self.yres) for x in range(self.xres) if self.grid[y][x]]
-            self.wall_index = {coord: i for i, coord in enumerate(self.walls)}
+            # compute wall list
+            self.walls = [(x, y) for y in range(self.min_y, self.max_y + 1) for x in range(self.min_x, self.max_x + 1) if self.grid[y][x]]
 
             # try to find a path
             p = self._astar(self.entrance, self.exit)
@@ -188,8 +188,7 @@ class Maze:
             self.grid[ey][ex] = False
 
             # update walls and path
-            self.walls = [(x, y) for y in range(self.yres) for x in range(self.xres) if self.grid[y][x]]
-            self.wall_index = {coord: i for i, coord in enumerate(self.walls)}
+            self.walls = [(x, y) for y in range(self.min_y, self.max_y + 1) for x in range(self.min_x, self.max_x + 1) if self.grid[y][x]]
 
             # try to find a path; if still missing, carve a minimal pixel corridor directly to exit
             p = self._astar(self.entrance, self.exit)
@@ -201,8 +200,7 @@ class Maze:
                 for y in range(min(sy, ey2), max(sy, ey2) + 1):
                     self.grid[y][ex2] = False
                 # recompute walls and path
-                self.walls = [(x, y) for y in range(self.yres) for x in range(self.xres) if self.grid[y][x]]
-                self.wall_index = {coord: i for i, coord in enumerate(self.walls)}
+                self.walls = [(x, y) for y in range(self.min_y, self.max_y + 1) for x in range(self.min_x, self.max_x + 1) if self.grid[y][x]]
                 p = self._astar(self.entrance, self.exit)
 
             self.path = p or [self.entrance, self.exit]
@@ -223,154 +221,85 @@ class Maze:
             if 0 <= nx < self.xres and 0 <= ny < self.yres and not self.grid[ny][nx]:
                 yield (nx, ny)
 
-    def _heuristic(self, a, b):
-        return abs(a[0] - b[0]) + abs(a[1] - b[1])
-
     def _astar(self, start, goal):
-        # simple A* implementation
-        open_set = {start}
-        came_from = {}
-        gscore = {start: 0}
-        fscore = {start: self._heuristic(start, goal)}
-
-        while open_set:
-            current = min(open_set, key=lambda n: fscore.get(n, 1e9))
-            if current == goal:
-                # reconstruct path
-                path = [current]
-                while current in came_from:
-                    current = came_from[current]
-                    path.append(current)
+        # All moves cost one: BFS finds a shortest path without A*'s 3 dicts/set.
+        width = self.xres
+        size = width * self.yres
+        parents = array('h', b'\xff\xff' * size)
+        start_id = start[1] * width + start[0]
+        goal_id = goal[1] * width + goal[0]
+        parents[start_id] = start_id
+        queue = array('H', [start_id])
+        head = 0
+        while head < len(queue):
+            current = queue[head]
+            head += 1
+            if current == goal_id:
+                path = []
+                while current != start_id:
+                    path.append((current % width, current // width))
+                    current = parents[current]
+                path.append(start)
                 path.reverse()
                 return path
-
-            open_set.remove(current)
-            for neighbor in self._neighbors(current):
-                tentative_g = gscore[current] + 1
-                if tentative_g < gscore.get(neighbor, 1e9):
-                    came_from[neighbor] = current
-                    gscore[neighbor] = tentative_g
-                    fscore[neighbor] = tentative_g + self._heuristic(neighbor, goal)
-                    open_set.add(neighbor)
+            x, y = current % width, current // width
+            for nx, ny in self._neighbors((x, y)):
+                index = ny * width + nx
+                if parents[index] == -1:
+                    parents[index] = current
+                    queue.append(index)
         return None
 
-    def hsv_to_rgb(self, h, s, v):
-        # same conversion as other modules
-        h = h / 60.0
-        hi = int(h) % 6
-        f = h - int(h)
-        p = v * (1 - s)
-        q = v * (1 - f * s)
-        t = v * (1 - (1 - f) * s)
-        if hi == 0:
-            return [int(v * 255), int(t * 255), int(p * 255)]
-        elif hi == 1:
-            return [int(q * 255), int(v * 255), int(p * 255)]
-        elif hi == 2:
-            return [int(p * 255), int(v * 255), int(t * 255)]
-        elif hi == 3:
-            return [int(p * 255), int(q * 255), int(v * 255)]
-        elif hi == 4:
-            return [int(t * 255), int(p * 255), int(v * 255)]
-        else:
-            return [int(v * 255), int(p * 255), int(q * 255)]
+    def _set(self, x, y, color):
+        offset = (x * self.yres + y) * 3
+        self.frame[offset] = color[0]
+        self.frame[offset + 1] = color[1]
+        self.frame[offset + 2] = color[2]
+
+    def _base(self, coord):
+        if coord == self.entrance:
+            return helpers.colors_rgb['green']
+        if coord == self.exit:
+            return helpers.colors_rgb['blue']
+        return helpers.colors_rgb['black']
 
     def get(self):
-        changes = []
-
-        # on first call, return full frame (matrix)
+        if self.at_end and time.time() >= self.pause_until:
+            self._create_solvable_maze()
+        frame = self.frame
         if self._first:
-            # generate full frame with wall colors and open as black
-            frame = [[helpers.colors_rgb['black'] for _ in range(self.yres)] for _ in range(self.xres)]
-            # color walls using cycling hues
-            palette_len = max(6, len(self.walls))
-            for idx, (x, y) in enumerate(self.walls):
-                hue = ((idx + self.hue_offset) % palette_len) * (360.0 / palette_len)
-                rgb = self.hsv_to_rgb(hue, 0.7, 0.6)
-                frame[x][y] = rgb
-            # mark entrance and exit with dim colors so they are visible
-            frame[self.entrance[0]][self.entrance[1]] = helpers.colors_rgb['green']
-            frame[self.exit[0]][self.exit[1]] = helpers.colors_rgb['blue']
-
-            self._first = False
-            self.hue_offset = (self.hue_offset + 1) % 360
-            return True, self.delay, frame
-
-        # update hue offset and recolor walls (we will emit color updates)
+            for i in range(len(frame)):
+                frame[i] = 0
+            self._set(*self.entrance, helpers.colors_rgb['green'])
+            self._set(*self.exit, helpers.colors_rgb['blue'])
         palette_len = max(6, len(self.walls))
+        for idx, (x, y) in enumerate(self.walls):
+            hue = ((idx + self.hue_offset) % palette_len) * 360 // palette_len
+            hsv_into(frame, (x * self.yres + y) * 3, hue, 179, 153)
         self.hue_offset = (self.hue_offset + 1) % palette_len
-        for coord, i in self.wall_index.items():
-            x, y = coord
-            hue = ((i + self.hue_offset) % palette_len) * (360.0 / palette_len)
-            rgb = self.hsv_to_rgb(hue, 0.7, 0.6)
-            changes.append([x, y, rgb])
-
-        # decay existing glows (red halos left behind)
-        for coord in list(self.glows.keys()):
-            x, y = coord
+        if self._first:
+            self._first = False
+            return True, self.delay, frame
+        # Only the small tail dictionary needs a temporary key snapshot.
+        for coord in tuple(self.glows):
             intensity = self.glows[coord] - self.glow_step
             if intensity <= 0:
                 del self.glows[coord]
-                # restore base color (wall / entrance/exit / black)
-                if coord in self.wall_index:
-                    i = self.wall_index[coord]
-                    hue = ((i + self.hue_offset) % palette_len) * (360.0 / palette_len)
-                    base = self.hsv_to_rgb(hue, 0.7, 0.6)
-                elif coord == self.entrance:
-                    base = helpers.colors_rgb['green']
-                elif coord == self.exit:
-                    base = helpers.colors_rgb['blue']
-                else:
-                    base = helpers.colors_rgb['black']
-                changes.append([x, y, base])
+                self._set(*coord, self._base(coord))
             else:
                 self.glows[coord] = intensity
-                glow_rgb = [int(intensity), 0, 0]
-                changes.append([x, y, glow_rgb])
-
-        # If we are at the end and pausing, keep the red pixel at the exit until pause expires
-        if getattr(self, 'at_end', False):
-            now = time.time()
-            if now < self.pause_until:
-                # ensure red pixel remains visible at end
-                endx, endy = self.path[-1]
-                changes.append([endx, endy, helpers.colors_rgb['red']])
-                return False, self.delay, changes
-            else:
-                # pause expired -> create new solvable maze and return full frame
-                self._create_solvable_maze()
-                # build full frame like on first draw
-                frame = [[helpers.colors_rgb['black'] for _ in range(self.yres)] for _ in range(self.xres)]
-                palette_len2 = max(6, len(self.walls))
-                for idx, (x, y) in enumerate(self.walls):
-                    hue = ((idx + self.hue_offset) % palette_len2) * (360.0 / palette_len2)
-                    rgb = self.hsv_to_rgb(hue, 0.7, 0.6)
-                    frame[x][y] = rgb
-                sx, sy = self.entrance
-                ex, ey = self.exit
-                frame[sx][sy] = helpers.colors_rgb['green']
-                frame[ex][ey] = helpers.colors_rgb['blue']
-                return True, self.delay, frame
-
-        # move the red pixel along the path
+                self._set(*coord, (intensity, 0, 0))
+        if self.at_end:
+            self._set(*self.path[-1], helpers.colors_rgb['red'])
+            return True, self.delay, frame
         if self.path:
-            prev_idx = max(0, self.head_idx - 1)
-            prev = self.path[prev_idx]
-            # set a new glow at the previous pixel (it will fade over frames)
-            self.glows[prev] = self.glow_start
-            changes.append([prev[0], prev[1], [self.glow_start, 0, 0]])
-
-            # current head position
-            cur = self.path[self.head_idx]
-            changes.append([cur[0], cur[1], helpers.colors_rgb['red']])
-
-            # advance head only if not in end state
+            previous = self.path[max(0, self.head_idx - 1)]
+            self.glows[previous] = self.glow_start
+            self._set(*previous, (self.glow_start, 0, 0))
+            self._set(*self.path[self.head_idx], helpers.colors_rgb['red'])
             self.head_idx += 1
             if self.head_idx >= len(self.path):
-                # reached the end -> set pause, keep red pixel for a moment
                 self.head_idx = len(self.path) - 1
                 self.at_end = True
                 self.pause_until = time.time() + self.pause_duration
-                return False, self.delay, changes
-
-        return False, self.delay, changes
+        return True, self.delay, frame
