@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "versions": [
+    {
+      "version": 7,
+      "project": "bambu/LED16x16_Pico_v7_front_0p20mm_SUNLU.3mf",
+      "front_thickness_mm": 0.2,
+      "case_dimensions_mm": [
+        162.4,
+        162.4,
+        52.0
+      ],
+      "matrix_cells": 256,
+      "holder_dimensions_mm": [
+        51.0,
+        35.2,
+        14.0
+      ],
+      "slicer": "Bambu Studio 02.08.03.66",
+      "slicer_warnings": "",
+      "estimated_seconds": 21240.236328125,
+      "estimated_filament_g": 122.19600677490234,
+      "first_layer_mm": 0.2,
+      "nozzle_c": [
+        240.0,
+        245.0
+      ],
+      "textured_pei_bed_c": 65.0,
+      "filament": "SUNLU PETG Black",
+      "filament_project_slot": 1,
+      "max_volumetric_speed_mm3_s": 8.0,
+      "physical_print_confirmed": true,
+      "physical_print_confirmation": {
+        "source": "project owner",
+        "date": "2026-10-17",
+        "result": "v7 front 0.20 mm worked in a physical print"
+      }
+    }
+  ],
+  "all_stl_watertight": true,
+  "all_stl_consistent_winding": true,
+  "one_connected_solid_per_stl": true,
+  "sha256": {
+    "bambu/LED16x16_Pico_v7_front_0p20mm_SUNLU.3mf": "499fc0a09c97242e32395bf95d1d35750f7203d78ba00d4b4fcea1970093d216",
+    "stl/obudowa_LED16x16_52mm_Pico_front_0p20mm_v7.stl": "8edf96301397b2d68e721e6847d98d6b0893b72bf730852ca0182d6ce2dbaf8a",
+    "stl/uchwyt_Raspberry_Pi_Pico_wzmocniony.stl": "ea563a5e692d9a4e4b87c522121774f779f3ecbcbba1113476e57ce6a61ee88b"
+  }
+}

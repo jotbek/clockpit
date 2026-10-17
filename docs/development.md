@@ -10,6 +10,8 @@
 | `simulator/` | Tkinter GUI and desktop hardware/time stubs |
 | `tests/` | Firmware, native arithmetic and simulator regression tests |
 | `tools/` | Desktop benchmark, Pico profiler, Donut soak test and animation preview renderer |
+| `models/enclosure/` | Bambu Studio enclosure projects, standalone STL meshes and geometry validation |
+| `docs/enclosure.md` | Enclosure versions, printing settings, material assignment and assembly |
 | `docs/wiring.md` | Hardware connections, both power-switch variants and USB supply procedure |
 
 ## Animation API

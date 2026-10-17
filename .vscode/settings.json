@@ -24,6 +24,7 @@
         "simulator",
         "tools",
         "docs",
+        "models",
         "build",
         "dist"
     ]

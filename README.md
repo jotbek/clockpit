@@ -39,6 +39,12 @@ The diagrams use direct GP22-to-DIN data wiring and no external protection diode
 
 See [wiring details, switch specifications and USB procedure](docs/wiring.md).
 
+## 3D-printed enclosure
+
+The **[v7 Bambu Studio project with a 0.20 mm front](models/enclosure/bambu/LED16x16_Pico_v7_front_0p20mm_SUNLU.3mf)** has been confirmed by a successful physical print. It contains the reinforced enclosure, Pico holder, black SUNLU PETG settings for the **P2S / standard 0.4 mm nozzle**, and the saved slicing result.
+
+Open the `.3mf` **as a complete project** to retain its settings. [Printing and assembly details](docs/enclosure.md) describe material assignment, validation and the separate [STL files](models/enclosure/stl/). The rear cover is excluded pending physical testing.
+
 ## Pico W / Pico 2 W setup
 
 1. Install MicroPython for your board: [Pico W](https://micropython.org/download/RPI_PICO_W/) or [Pico 2 W](https://micropython.org/download/RPI_PICO2_W/).
@@ -60,7 +66,7 @@ See [wiring details, switch specifications and USB procedure](docs/wiring.md).
 
 4. Reset the board. `main.py` starts automatically.
 
-**VS Code / MicroPico:** use **Upload Project** with this repository opened as the project folder. [Project settings](.vscode/settings.json) upload only `.py` files and exclude tests, simulator, tools, docs and caches. `secrets.py` is uploaded but stays ignored by Git. Existing unwanted files on the board need a one-time manual cleanup; upload filters do not remove them.
+**VS Code / MicroPico:** use **Upload Project** with this repository opened as the project folder. [Project settings](.vscode/settings.json) upload only `.py` files and exclude tests, simulator, tools, docs, enclosure models and caches. `secrets.py` is uploaded but stays ignored by Git. Existing unwanted files on the board need a one-time manual cleanup; upload filters do not remove them.
 
 Defaults: **125 MHz**, brightness **96/255**, display **16x16**. Edit display/brightness settings in [main.py](main.py). Overclocking is disabled in [core/init.py](core/init.py): `OVERCLOCK_ENABLED = False`; the optional `overclock_freq` is 250 MHz.
 
