@@ -41,6 +41,8 @@ See [wiring details, switch specifications and USB procedure](docs/wiring.md).
 
 ## 3D-printed enclosure
 
+![Clockpit v7 enclosure with its 16×16 LED grid and removable Pico holder](docs/enclosure/enclosure-v7.png)
+
 The **[v7 Bambu Studio project with a 0.20 mm front](models/enclosure/bambu/LED16x16_Pico_v7_front_0p20mm_SUNLU.3mf)** has been confirmed by a successful physical print. It contains the reinforced enclosure, Pico holder, black SUNLU PETG settings for the **P2S / standard 0.4 mm nozzle**, and the saved slicing result.
 
 Open the `.3mf` **as a complete project** to retain its settings. [Printing and assembly details](docs/enclosure.md) describe material assignment, validation and the separate [STL files](models/enclosure/stl/). The rear cover is excluded pending physical testing.

@@ -1,5 +1,7 @@
 # LED16x16 / Pico enclosure
 
+![Clockpit v7 enclosure and removable Pico holder](../../docs/enclosure/enclosure-v7.png)
+
 Use the [v7 Bambu Studio project](bambu/LED16x16_Pico_v7_front_0p20mm_SUNLU.3mf), which has a 0.20 mm front and a successful physical print confirmed by the project owner. Open it as a complete project; it includes the enclosure, reinforced Pico holder and SUNLU PETG print settings for the Bambu Lab P2S / standard 0.4 mm nozzle.
 
 - [`bambu/`](bambu/): the complete v7 project.

@@ -1,5 +1,9 @@
 # Enclosure and Bambu Studio projects
 
+![CAD view of the v7 enclosure, LED grid, button openings and removable Pico holder](enclosure/enclosure-v7.png)
+
+*Rendered from the v7 STL files. The holder is highlighted in amber; both parts use black PETG in the saved Bambu project.*
+
 The enclosure fits the Clockpit 16×16 LED matrix and a sliding Raspberry Pi Pico holder. Its external dimensions are **162.4 × 162.4 × 52 mm**. Version 7 includes the 16×16 internal grid, reinforced button apertures, reinforced Pico guides and the reinforced removable holder.
 
 ## Ready-to-print project
