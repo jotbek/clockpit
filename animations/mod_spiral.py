@@ -1,6 +1,6 @@
 import random
-import time
 from array import array
+from core import timing
 
 
 min_delay = 1
@@ -21,12 +21,13 @@ class Spiral:
         self.spawn_draw()
 
         # Schedule alternating events (erase / new marker) every random interval
-        self.next_event_time = time.time() + random.uniform(min_delay, max_delay)
+        self.next_event_time = timing.ticks_add(
+            timing.ticks_ms(), random.randint(min_delay * 1000, max_delay * 1000))
         self.next_is_erase = True  # alternate between erase and spawn draw
 
         # Event guard: prevent re-entrant handling and rapid retriggers
         self._in_event = False
-        self.last_event_time = 0.0
+        self.last_event_time = None
 
     def _compute_spiral_path(self, w, h):
         # Generate coordinates following a clockwise spiral from outer frame to center
@@ -67,11 +68,11 @@ class Spiral:
         self.actors.append(actor)
 
     def get(self):
-        # Manage timed events: alternate spawn erase / spawn draw every 2..8 seconds
-        now = time.time()
-        if now >= self.next_event_time:
+        # Millisecond deadlines survive tick rollover without float timestamps.
+        now = timing.ticks_ms()
+        if timing.ticks_diff(now, self.next_event_time) >= 0:
             # Debounce: skip if we just fired an event very recently
-            if now - self.last_event_time < 0.05:
+            if self.last_event_time is not None and timing.ticks_diff(now, self.last_event_time) < 50:
                 # Too soon after previous event; skip
                 pass
             elif self._in_event:
@@ -81,8 +82,8 @@ class Spiral:
                 self._in_event = True
                 try:
                     # Use an integer interval and reserve next event time
-                    interval = random.randint(min_delay, max_delay)
-                    self.next_event_time = now + interval
+                    interval = random.randint(min_delay, max_delay) * 1000
+                    self.next_event_time = timing.ticks_add(now, interval)
                     self.last_event_time = now
                     if self.next_is_erase:
                         self.spawn_erase()

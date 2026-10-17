@@ -11,6 +11,8 @@ import time
 
 
 def run(frames=100):
+    if frames < 1:
+        raise ValueError('frames must be positive')
     from machine import Pin
     from neopixel import NeoPixel
     from core.display import MatrixDisplay
@@ -26,6 +28,7 @@ def run(frames=100):
         ('animations.mod_rainbow', 'Rainbow'), ('animations.mod_maze', 'Maze'),
         ('animations.mod_santatree_16x16', 'Santree'),
         ('animations.mod_donut', 'Donut'),
+        ('animations.mod_daycycle', 'DayCycle'),
     )
     print('module, us/frame, free at start, free with state, minimum free')
     for module_name, class_name in specs:
@@ -35,13 +38,14 @@ def run(frames=100):
         gc.collect()
         with_state = gc.mem_free()
         minimum = with_state
-        start = time.ticks_us()
+        elapsed = 0
         for _ in range(frames):
+            start = time.ticks_us()
             full, _, changes = animation.get()
             display.apply(full, changes, 96)
+            elapsed += time.ticks_diff(time.ticks_us(), start)
             minimum = min(minimum, gc.mem_free())
             changes = None
-        elapsed = time.ticks_diff(time.ticks_us(), start)
         print(class_name, elapsed // frames, before, with_state, minimum)
         animation = None
         unload_module(module_name)

@@ -1,0 +1,30 @@
+{
+    "micropico.syncFolder": "",
+    "micropico.syncAllFileTypes": false,
+    "micropico.syncFileTypes": ["py"],
+    "micropico.pyIgnore": [
+        "**/.picowgo",
+        "**/.micropico",
+        "**/.vscode",
+        "**/.gitignore",
+        "**/.git",
+        "**/.DS_Store",
+        "**/project.pico-go",
+        "**/env",
+        "**/venv",
+        "**/.venv",
+        "**/.idea",
+        "**/__pycache__",
+        "**/.pytest_cache",
+        "**/.mypy_cache",
+        "**/.ruff_cache",
+        "**/.codex",
+        "**/.agents",
+        "tests",
+        "simulator",
+        "tools",
+        "docs",
+        "build",
+        "dist"
+    ]
+}

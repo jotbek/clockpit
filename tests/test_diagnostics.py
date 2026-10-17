@@ -27,6 +27,7 @@ def diagnostics_namespace():
                                     mem_free=Mock(return_value=196608), collect=Mock()),
         'machine': types.SimpleNamespace(freq=Mock(return_value=250000000)),
         'sys': sys,
+        'health': None,
     }
     exec(compile(tree, str(source), 'exec'), namespace)
     return namespace

@@ -1,5 +1,5 @@
 import random
-import time
+from core import timing
 
 
 class GameOfLife:
@@ -22,7 +22,7 @@ class GameOfLife:
         for y in range(1, self.yres + 1):
             for x in range(1, self.xres + 1):
                 self.grid[y * self.stride + x] = random.randint(0, 1)
-        self.timestamp = time.time()
+        self.timestamp = timing.ticks_ms()
 
     def update(self):
         grid, new_grid = self.grid, self.next_grid
@@ -59,7 +59,7 @@ class GameOfLife:
 
     def get(self):
         frame = self.frame
-        if time.time() - self.timestamp > self.time_max_s:
+        if timing.ticks_diff(timing.ticks_ms(), self.timestamp) > self.time_max_s * 1000:
             self.init()
             for i in range(0, len(frame), 3):
                 frame[i], frame[i + 1], frame[i + 2] = self.r_frame, self.g_frame, self.b_frame

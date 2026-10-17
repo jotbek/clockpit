@@ -65,6 +65,7 @@ def run():
         ('animations.mod_rainbow', 'Rainbow'), ('animations.mod_maze', 'Maze'),
         ('animations.mod_santatree_16x16', 'Santree'),
         ('animations.mod_donut', 'Donut'),
+        ('animations.mod_daycycle', 'DayCycle'),
     )
     results = {}
     for module_name, name in specs:

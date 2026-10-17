@@ -1,8 +1,10 @@
-from core.colors import rainbow_into
+from array import array
+from core.colors import rainbow_palette
+from core.native import micropython, ptr8, ptr16, ptr32
 
 
 class Mandelbrot:
-    """Follow a visible escape-time boundary, within RP2040 float precision."""
+    """Follow a visible boundary using a native, overflow-safe Q26 kernel."""
     targets = (
         (-0.7436439, 0.1318259),
         (0.2745290, 0.4822550),
@@ -23,6 +25,10 @@ class Mandelbrot:
         self.color_shift = 0
         self.frame = bytearray(xres * yres * 3)
         self.iterations = bytearray(xres * yres)
+        self.real = array('i', bytes(xres * 4))
+        self.imag = array('i', bytes(yres * 4))
+        self.stats = array('H', bytes(6))
+        self.palette = rainbow_palette()
 
     def _reset(self):
         self.target_idx = (self.target_idx + 1) % len(self.targets)
@@ -36,44 +42,80 @@ class Mandelbrot:
         xmin = self.cx - width * 0.5 + dx * 0.5
         ymin = self.cy - height * 0.5 + dx * 0.5
         max_iter = 24 + 8 * (width < 1.0) + 8 * (width < 0.1) + 8 * (width < 0.01)
-        frame, iterations = self.frame, self.iterations
-        lit = 0
-        low, high = max_iter, 0
-        idx = 0
+        # Quantise each coordinate independently, avoiding accumulated step error.
+        # Q26 has a 1.49e-8 step, well below the deepest 16x16 pixel spacing.
         for x in range(self.xres):
-            cr = xmin + x * dx
-            cr_off = cr - 0.25
-            cr_off2 = cr_off * cr_off
-            cr_plus1_2 = (cr + 1.0) * (cr + 1.0)
-            for y in range(self.yres):
-                ci = ymin + y * dx
-                ci2 = ci * ci
-                q = cr_off2 + ci2
-                i = max_iter
+            self.real[x] = int((xmin + x * dx) * 67108864)
+        for y in range(self.yres):
+            self.imag[y] = int((ymin + y * dx) * 67108864)
+        self._render_native(max_iter)
+        return self.stats[0], self.stats[1], self.stats[2]
+
+    @micropython.viper
+    def _render_native(self, max_iter: int):
+        frame = ptr8(self.frame)
+        iterations = ptr8(self.iterations)
+        real = ptr32(self.real)
+        imag = ptr32(self.imag)
+        palette = ptr8(self.palette)
+        stats = ptr16(self.stats)
+        width = int(self.xres)
+        height = int(self.yres)
+        phase = int(self.color_shift)
+        lit = 0
+        low = max_iter
+        high = 0
+        idx = 0
+        for x in range(width):
+            cr = int(real[x])
+            for y in range(height):
+                ci = int(imag[y])
+                zr = 0
+                zi = 0
+                i = 0
                 escaped = False
-                if not (q * (q + cr_off) <= 0.25 * ci2 or cr_plus1_2 + ci2 <= 0.0625):
-                    zr = zi = zr2 = zi2 = 0.0
-                    i = 0
-                    while zr2 + zi2 <= 4.0 and i < max_iter:
-                        zi = 2.0 * zr * zi + ci
-                        zr = zr2 - zi2 + cr
-                        zr2 = zr * zr
-                        zi2 = zi * zi
-                        i += 1
-                    escaped = zr2 + zi2 > 4.0
+                while True:
+                    # Check components before squaring: every product below fits
+                    # signed 32 bits. A component outside [-2, 2] has escaped.
+                    if zr < -134217728 or zr > 134217728 or zi < -134217728 or zi > 134217728:
+                        escaped = True
+                        break
+                    rh = zr >> 13
+                    rl = zr & 8191
+                    ih = zi >> 13
+                    il = zi & 8191
+                    # Exact (a*b)>>26 using 13-bit limbs, without 64-bit products.
+                    zr2 = rh * rh + ((2 * rh * rl + ((rl * rl) >> 13)) >> 13)
+                    zi2 = ih * ih + ((2 * ih * il + ((il * il) >> 13)) >> 13)
+                    if zr2 + zi2 > 268435456:
+                        escaped = True
+                        break
+                    if i >= max_iter:
+                        break
+                    product = rh * ih + ((rh * il + rl * ih + ((rl * il) >> 13)) >> 13)
+                    zi = 2 * product + ci
+                    zr = zr2 - zi2 + cr
+                    i += 1
                 offset = idx * 3
                 # An escape on the final iteration is still an escape.
                 if escaped:
                     iterations[idx] = i
-                    rainbow_into(frame, offset, i * 22 + self.color_shift)
+                    colour = ((i * 22 + phase) % 360) * 3
+                    frame[offset] = palette[colour]
+                    frame[offset + 1] = palette[colour + 1]
+                    frame[offset + 2] = palette[colour + 2]
                     lit += 1
-                    low = min(low, i)
-                    high = max(high, i)
+                    if i < low:
+                        low = i
+                    if i > high:
+                        high = i
                 else:
                     iterations[idx] = 0
                     frame[offset] = frame[offset + 1] = frame[offset + 2] = 0
                 idx += 1
-        return lit, low, high
+        stats[0] = lit
+        stats[1] = low
+        stats[2] = high
 
     def _follow_boundary(self):
         values = self.iterations

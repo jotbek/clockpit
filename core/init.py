@@ -3,14 +3,14 @@ import time
 import secrets
 import ntptime
 import machine
-import sys
 
 ssid = secrets.wifi_name
 password = secrets.wifi_pass
 
-# overclock
+# Use nominal frequency for long-running stability. Overclocking is opt-in.
 normal_freq = 125_000_000  # 125 MHz
-overclock_freq = 250_000_000  # 250 MHz (tested with 266 and 300 MHz, but unstable)
+OVERCLOCK_ENABLED = False
+overclock_freq = 250_000_000  # Used only when OVERCLOCK_ENABLED is True.
 
 
 def set_time():
@@ -48,24 +48,31 @@ def connect():
         print('ip = ' + status[0])
 
 
-def overclock():
+def set_cpu_frequency():
     print('Current freq:', machine.freq()/1000000, 'Mhz')
 
     try:
-        machine.freq(overclock_freq)
+        machine.freq(overclock_freq if OVERCLOCK_ENABLED else normal_freq)
     except Exception as e:
         machine.freq(normal_freq)
-        print('Overclocking failed, setting to normal freq:', e)
+        print('Frequency change failed, setting to nominal frequency:', e)
         
-    print('Overclocked with:', machine.freq()/1000000, 'Mhz')
+    print('CPU frequency:', machine.freq()/1000000, 'Mhz')
 
 
 def run():
+    set_cpu_frequency()
     try:
-        overclock()
         connect()       
         set_time()
     except Exception as e:
         print('Initialization failed:', e)
-        sys.exit(1)
-        
+        print('Continuing with the current RTC; network time is not synchronized.')
+        return False
+    finally:
+        # No network traffic is needed after startup; release Wi-Fi resources.
+        try:
+            network.WLAN(network.STA_IF).active(False)
+        except Exception as e:
+            print('Could not disable Wi-Fi:', e)
+    return True

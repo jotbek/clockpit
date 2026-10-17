@@ -21,6 +21,14 @@ def rainbow_into(buf, offset, hue):
     buf[offset + 2] = b
 
 
+def rainbow_palette():
+    """Precompute all integer hues once, for native renderers (1080 bytes)."""
+    palette = bytearray(360 * 3)
+    for hue in range(360):
+        rainbow_into(palette, hue * 3, hue)
+    return palette
+
+
 def hsv_into(buf, offset, hue, saturation, value):
     """HSV with integer hue and saturation/value in 0..255."""
     hue %= 360

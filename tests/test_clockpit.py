@@ -30,6 +30,7 @@ MODULES = (
     ('animations.mod_rainbow', 'Rainbow'), ('animations.mod_maze', 'Maze'),
     ('animations.mod_santatree_16x16', 'Santree'),
     ('animations.mod_donut', 'Donut'),
+    ('animations.mod_daycycle', 'DayCycle'),
 )
 
 
@@ -277,7 +278,7 @@ class ModuleTests(unittest.TestCase):
         animation = FirePlasma(16, 16)
         for _ in range(300):
             animation.get()
-            self.assertTrue(all(0 <= heat <= 4095 for column in animation.heat for heat in column))
+            self.assertTrue(all(0 <= heat <= 4095 for heat in animation.heat))
 
     def test_mandelbrot_tracks_detail_for_full_cycles_and_recovers(self):
         fractal = Mandelbrot()

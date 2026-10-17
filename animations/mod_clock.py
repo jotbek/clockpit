@@ -1,6 +1,7 @@
 import random
 import time
 from core import helpers
+from core.localtime import day_of_week, is_dst_poland
 from array import array
 
 
@@ -32,67 +33,12 @@ class Clock:
         self.dst_date = None
         self.utc_offset = 1
 
+    # Keep the existing helpers available to callers; DayCycle shares the rules.
     def is_dst_poland(self, year, month, day, hour):
-        # Checks if daylight saving time (DST) is in effect in Poland for the given date and time.
-        # DST in Poland starts on the last Sunday of March at 2:00 AM
-        # and ends on the last Sunday of October at 3:00 AM.
+        return is_dst_poland(year, month, day, hour)
 
-        # Find the last Sunday of March
-        last_sunday_march = 31
-        for d in range(31, 24, -1):
-            if self.day_of_week(year, 3, d) == 6:  # Sunday
-                last_sunday_march = d
-                break
-        # Find the last Sunday of October
-        last_sunday_october = 31
-        for d in range(31, 24, -1):
-            if self.day_of_week(year, 10, d) == 6:  # Sunday
-                last_sunday_october = d
-                break
-
-        if (month > 3 and month < 10):
-            return True
-        elif month == 3:
-            if day > last_sunday_march:
-                return True
-            elif day < last_sunday_march:
-                return False
-            else:  # day == last_sunday_march
-                if hour >= 2:
-                    return True
-                else:
-                    return False
-        elif month == 10:
-            if day < last_sunday_october:
-                return True
-            elif day > last_sunday_october:
-                return False
-            else:  # day == last_sunday_october
-                if hour < 3:
-                    return True
-                else:
-                    return False
-        else:
-            return False
-
-    def day_of_week(self, y, m, d):
-        # Zeller's Congruence algorithm for the Gregorian calendar
-        if m < 3:
-            m += 12
-            y -= 1
-        K = y % 100
-        J = y // 100
-        h = (d + ((13*(m + 1)) // 5) + K + (K // 4) + (J // 4) - 2*J) % 7
-        # h = 0: Saturday
-        # h = 1: Sunday
-        # h = 2: Monday
-        # h = 3: Tuesday
-        # h = 4: Wednesday
-        # h = 5: Thursday
-        # h = 6: Friday
-        # Adjust to week numbering where Monday=0, Sunday=6
-        weekday = (h + 5) % 7
-        return weekday  # 0=Monday, ..., 6=Sunday
+    def day_of_week(self, year, month, day):
+        return day_of_week(year, month, day)
 
     def _number(self, number, color, x_shift, y_shift):
         for n in range(2):

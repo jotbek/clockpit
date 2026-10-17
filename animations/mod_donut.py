@@ -79,6 +79,7 @@ class Donut:
         size = width * height
         ring_length = int(len(self.ring))
         tube_length = int(len(self.tube))
+        reciprocal_length = int(len(self.reciprocal))
         for i in range(size):
             depth[i] = 0
             frame[i * 3] = 0
@@ -115,7 +116,11 @@ class Donut:
                 x = (radius * ring_x + tube_height * tube_x) >> 12
                 y = (radius * ring_y + tube_height * tube_y) >> 12
                 z = 24576 + ((radius * ring_z + tube_height * tube_z) >> 12)
-                projection = int(reciprocal[(z >> 7) - 96])
+                projection_index = (z >> 7) - 96
+                # Viper pointers have no bounds checks: never read off-table.
+                if not (0 <= projection_index < reciprocal_length):
+                    continue
+                projection = int(reciprocal[projection_index])
                 px = (center_x + ((x * projection) >> 12)) >> 10
                 py = (center_y - ((y * projection) >> 12)) >> 10
                 if not (0 <= px < width and 0 <= py < height):

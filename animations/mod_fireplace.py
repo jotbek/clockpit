@@ -1,142 +1,185 @@
+"""Smooth rising flames, a warm ember bed and sparse subpixel sparks."""
+from array import array
+import math
 import random
+from core.native import micropython, ptr8, ptr16
 
 
 class Fireplace:
-    xres = 0
-    yres = 0
-    spark_fq = 5 # chance is (100 / spark_fq)%
+    # Heat -> RGB anchors, interpolated once into a 256-entry palette.
+    colours = ((0, (0, 0, 0)), (24, (12, 0, 0)), (64, (100, 5, 0)),
+               (112, (230, 38, 0)), (160, (255, 110, 2)),
+               (208, (255, 190, 35)), (240, (255, 230, 110)),
+               (255, (255, 248, 170)))
+    spark_fq = 24
 
-    min_ignite = 3
-    max_ignite = 13
-    black_rgb = [0, 0, 0]
-    white_rgb = [255, 255, 255]
-    colors_arr = [
-        white_rgb,
-        [255, 255, 204],
-        [252, 220, 90],
-        [252, 210, 60],
-        [252, 200, 30],
-        [252, 190, 20],
-        [252, 180, 10],
-        [252, 170, 5],
-        [252, 160, 3],
-        [252, 150, 3],
-        [255, 120, 3],
-        [252, 100, 3],
-        [204, 80, 3],
-        [204, 0, 3],
-        [150, 60, 0],
-        [120, 30, 0],
-        [90, 20, 0],
-        [140, 0, 0],
-        [120, 0, 0],
-        [100, 0, 0],
-        [80, 0, 0],
-        [60, 0, 0],
-        [40, 0, 0],
-        [25, 0, 0],
-        [10, 3, 0],
-        black_rgb
-    ]
-
-    frame = []
-    frame_rgb = []
-
-
-    def __init__(self, xres, yres):
+    def __init__(self, xres, yres, delay=0.02):
+        if xres < 1 or not 1 <= yres <= 255:
+            raise ValueError('Fireplace needs positive width and height in 1..255')
         self.xres = xres
         self.yres = yres
-
-        self.frame = [bytearray(yres) for _ in range(xres)]
+        self.delay = delay
+        self.phase = 0
+        self.frame = bytearray(xres * yres)
+        self.next_heat = bytearray(xres * yres)
         self.frame_rgb = bytearray(xres * yres * 3)
-
+        self.palette = bytearray(256 * 3)
+        for index in range(len(self.colours) - 1):
+            start, a = self.colours[index]
+            end, b = self.colours[index + 1]
+            for heat in range(start, end + 1):
+                for channel in range(3):
+                    self.palette[heat * 3 + channel] = (
+                        a[channel] * (end - heat) + b[channel] * (heat - start)) // (end - start)
+        self.fuel = bytearray(xres)
+        self.target_fuel = bytearray(xres)
+        self.burners = bytearray((200, 255, 180, 230))
+        self.profile = bytearray(xres)
+        self.cooling = bytearray(yres)
+        for x in range(xres):
+            distance = abs(2 * x + 1 - xres) * 256 // xres
+            self.profile[x] = min(255, (256 - distance) * 4)
+            self.fuel[x] = random.randint(140, 255)
+            self.target_fuel[x] = self.fuel[x]
+        for y in range(yres):
+            self.cooling[y] = 8 + (yres - 1 - y) * 10 // yres
+        self.wind = bytearray(128 + int(80 * math.sin(i * 2 * math.pi / 64)) for i in range(64))
+        # Four bounded particles: integer columns, Q8 vertical position, heat.
+        self.spark_x = array('H', bytes(8))
+        self.spark_y = array('H', bytes(8))
+        self.spark_velocity = bytearray(4)
+        self.spark_heat = bytearray(4)
+        # Start with an ember bed rather than an entirely empty first frame.
+        for x in range(xres):
+            self.frame[x * yres + yres - 1] = self.fuel[x] * self.profile[x] >> 8
 
     def get(self):
         self.ignite()
-        self.animate()
-
-        return True, 0.0, self.apply_filters_convert2rgb()
-
-
-    def animate(self):
-        self.animate_delta(0, self.yres)
-
-        if random.randint(0, self.spark_fq) == 0:   # spark
-            self.frame[random.randint(0, self.xres - 1)][random.randint(0, self.yres // 2)] = len(self.colors_arr) - 1
-
-
-    def animate_delta(self, ymin, ymax):
-        # perfomance: reference locally
-        _frame = self.frame
-
-        for y in range(ymin, ymax):
-            for x in range(self.xres):
-                x_direction = random.randint(-1, 1)
-
-                color = _frame[x][y] - random.randint(1, 2)
-                if _frame[max(x - 1, 0)][y] == 0 or x - 1 < 3:
-                    color = max(color - 3, 0)
-
-                if _frame[min(x + 1, self.xres - 1)][y] == 0 or x + 1 > self.xres - 4:
-                    color = max(color - 3, 0)
-                self.light(x, y, x + x_direction, y - 1, color)
-
-
-    def apply_filters_convert2rgb(self):
-        self.apply_filter(0, self.yres)
-
-        return self.frame_rgb
-
-
-    def apply_filter(self, ymin, ymax):
-        # perfomance: reference locally
-
-        for y in range(ymin, ymax):
-            for x in range(self.xres):
-                self.apply_low_pass_filter(x, y)
-
-
-    def apply_low_pass_filter(self, x, y):
-        # perfomance: reference locally
-        _colors = self.colors_arr
-        _frame = self.frame
-
-        r, g, b = 0, 0, 0
-
-        offset = (x * self.yres + y) * 3
-        out = self.frame_rgb
-        if _frame[x][y] == 0:
-            out[offset] = out[offset + 1] = out[offset + 2] = 0
-            return
-
-        # sum rgb values of colors from surrounding pixels
-        for dy in range(-1, 1):
-            for dx in range(-1, 1):
-                fx = x + dx
-                fy = y + dy
-                if fx > 0 and fx < self.xres and fy > 0 and fy < self.yres:
-                    col = _colors[-1 - _frame[fx][fy]]
-                    r += col[0]
-                    g += col[1]
-                    b += col[2]
-
-        out[offset] = r // 9
-        out[offset + 1] = g // 9
-        out[offset + 2] = b // 9
-
-
-    def light(self, x, y, x_new, y_new, color):
-        # perfomance: reference locally
-        _frame = self.frame
-
-        if y_new >= 0 and y_new < self.yres:
-            if x_new >= 0 and x_new < self.xres :
-                _frame[x_new][y_new] = max(color, 0)
-
-        # replace old pixel
-        _frame[x][y] = max(_frame[x][y] - 1, 0)
-
+        self._propagate()
+        self.frame, self.next_heat = self.next_heat, self.frame
+        self._update_sparks()
+        self._draw()
+        self.phase = (self.phase + 1) & 255
+        return True, self.delay, self.frame_rgb
 
     def ignite(self):
-        for x in range(self.min_ignite, min(self.max_ignite, self.xres)):
-            self.frame[x][self.yres - 1] = len(self.colors_arr) - 1
+        # Random targets evolve slowly; there is no per-pixel white-noise field.
+        if self.phase & 15 == 0:
+            for i in range(4):
+                self.burners[i] = random.randint(50, 235)
+            self.burners[random.randrange(4)] = 255
+            for x in range(self.xres):
+                position = x * 3 * 256 // max(1, self.xres - 1)
+                segment = min(2, position >> 8)
+                fraction = position - segment * 256
+                self.target_fuel[x] = (
+                    self.burners[segment] * (256 - fraction)
+                    + self.burners[segment + 1] * fraction) >> 8
+        for x in range(self.xres):
+            delta = self.target_fuel[x] - self.fuel[x]
+            self.fuel[x] += max(-6, min(6, delta))
+
+    @micropython.viper
+    def _propagate(self):
+        old = ptr8(self.frame)
+        new = ptr8(self.next_heat)
+        fuel = ptr8(self.fuel)
+        profile = ptr8(self.profile)
+        cooling = ptr8(self.cooling)
+        wind = ptr8(self.wind)
+        width = int(self.xres)
+        height = int(self.yres)
+        phase = int(self.phase)
+        for x in range(width):
+            left = x - 1 if x > 0 else x
+            right = x + 1 if x + 1 < width else x
+            for y in range(height - 1):
+                offset = x * height + y
+                below = y + 1
+                flow = int(wind[(phase + y * 3) & 63]) - 128
+                neighbour = right
+                if flow < 0:
+                    neighbour = left
+                    flow = -flow
+                rising = (int(old[x * height + below]) * (256 - flow)
+                          + int(old[neighbour * height + below]) * flow) >> 8
+                mixed = (rising * 6 + int(old[left * height + below])
+                         + int(old[right * height + below])) >> 3
+                value = mixed - int(cooling[y]) - ((255 - int(profile[x])) >> 5)
+                if value < 0:
+                    value = 0
+                # Fractional rise blends the advected heat with the previous cell.
+                new[offset] = (int(old[offset]) + value * 3) >> 2
+            heat = (int(fuel[left]) + 6 * int(fuel[x]) + int(fuel[right])) >> 3
+            new[x * height + height - 1] = (heat * int(profile[x])) >> 8
+
+    def _update_sparks(self):
+        for i in range(4):
+            if self.spark_heat[i]:
+                position = self.spark_y[i] - self.spark_velocity[i]
+                strength = self.spark_heat[i] - 5
+                if position < 0 or strength <= 0:
+                    self.spark_heat[i] = 0
+                    self.spark_y[i] = 0
+                else:
+                    self.spark_y[i] = position
+                    self.spark_heat[i] = strength
+        if self.yres < 3 or random.randrange(self.spark_fq) != 0:
+            return
+        for i in range(4):
+            if self.spark_heat[i] == 0:
+                self.spark_x[i] = random.randrange(self.xres)
+                self.spark_y[i] = (self.yres - 2) << 8
+                self.spark_velocity[i] = random.randint(80, 160)
+                self.spark_heat[i] = random.randint(170, 240)
+                break
+
+    @micropython.viper
+    def _draw(self):
+        heat = ptr8(self.frame)
+        out = ptr8(self.frame_rgb)
+        palette = ptr8(self.palette)
+        width = int(self.xres)
+        height = int(self.yres)
+        for x in range(width):
+            left = x - 1 if x > 0 else x
+            right = x + 1 if x + 1 < width else x
+            for y in range(height):
+                above = y - 1 if y > 0 else y
+                below = y + 1 if y + 1 < height else y
+                # Symmetric heat blur fills holes without desaturating flame colours.
+                value = (4 * int(heat[x * height + y])
+                         + int(heat[left * height + y]) + int(heat[right * height + y])
+                         + int(heat[x * height + above]) + int(heat[x * height + below])) >> 3
+                colour = value * 3
+                offset = (x * height + y) * 3
+                for channel in range(3):
+                    # Half-frame persistence reduces flicker and softens moving tips.
+                    out[offset + channel] = (int(out[offset + channel])
+                                             + int(palette[colour + channel]) + 1) >> 1
+        sx = ptr16(self.spark_x)
+        sy = ptr16(self.spark_y)
+        strength = ptr8(self.spark_heat)
+        for i in range(4):
+            power = int(strength[i])
+            if power == 0:
+                continue
+            x = int(sx[i])
+            position = int(sy[i])
+            row = position >> 8
+            fraction = position & 255
+            for part in range(2):
+                y = row + part
+                if not (0 <= x < width and 0 <= y < height):
+                    continue
+                weight = fraction if part else 256 - fraction
+                glow = (power * weight) >> 8
+                offset = (x * height + y) * 3
+                for channel in range(3):
+                    addition = glow
+                    if channel == 1:
+                        addition = (glow * 3) >> 2
+                    elif channel == 2:
+                        addition = glow >> 2
+                    value = int(out[offset + channel]) + addition
+                    out[offset + channel] = 255 if value > 255 else value

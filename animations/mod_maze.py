@@ -1,8 +1,8 @@
 import random
-import time
 from core import helpers
 from array import array
 from core.colors import hsv_into
+from core import timing
 
 
 class Maze:
@@ -264,7 +264,7 @@ class Maze:
         return helpers.colors_rgb['black']
 
     def get(self):
-        if self.at_end and time.time() >= self.pause_until:
+        if self.at_end and timing.ticks_diff(timing.ticks_ms(), self.pause_until) >= 0:
             self._create_solvable_maze()
         frame = self.frame
         if self._first:
@@ -301,5 +301,6 @@ class Maze:
             if self.head_idx >= len(self.path):
                 self.head_idx = len(self.path) - 1
                 self.at_end = True
-                self.pause_until = time.time() + self.pause_duration
+                self.pause_until = timing.ticks_add(
+                    timing.ticks_ms(), int(self.pause_duration * 1000))
         return True, self.delay, frame

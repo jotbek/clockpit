@@ -13,6 +13,7 @@ import gc
 import sys
 from core.display import MatrixDisplay
 from core.loading import create_module, unload_module
+from core.health import RuntimeHealth, save_failure
 
 from core import helpers
 
@@ -33,12 +34,15 @@ ui_sleep = getattr(time, 'ui_sleep', time.sleep)
 button_mask = 0
 plus_repeat_at = 0
 minus_repeat_at = 0
-ticks_us = getattr(time, 'ticks_us', lambda: int(time.time() * 1000000))
+ticks_us = getattr(time, 'ticks_us', lambda: int(time.monotonic() * 1000000))
 ticks_diff = getattr(time, 'ticks_diff', lambda end, start: end - start)
 ticks_add = getattr(time, 'ticks_add', lambda current, delta: current + delta)
 stats_ticks_us = getattr(time, 'stats_ticks_us', ticks_us)
 stats_ticks_diff = getattr(time, 'stats_ticks_diff', ticks_diff)
 SIMULATOR = sys.implementation.name != 'micropython'
+health = None
+watchdog = None
+run_stage = 'startup'
 
 # MODULES:
 modules = [
@@ -56,6 +60,7 @@ modules = [
     ('animations.mod_maze', 'Maze', xres, yres),
     ('animations.mod_santatree_16x16', 'Santree', xres, yres),
     ('animations.mod_mandelbrot', 'Mandelbrot', xres, yres),
+    ('animations.mod_daycycle', 'DayCycle', xres, yres),
 ]
 
 # BUTTONS PIN configuration:
@@ -185,6 +190,11 @@ def print_system_info():
         import os
         info = os.uname()
         print('firmware: MicroPython {} | board: {}'.format(info.version, info.machine))
+        reset_cause = getattr(machine, 'reset_cause', None)
+        if reset_cause is not None:
+            cause = reset_cause()
+            label = 'watchdog' if cause == getattr(machine, 'WDT_RESET', None) else str(cause)
+            print('reset cause:', label)
 
 
 def print_log(elapsed_us=0):
@@ -205,6 +215,9 @@ def print_log(elapsed_us=0):
                 ' | render share: {:.1f}%').format(
             counter * 1000000 / elapsed_us, render_time_us / counter / 1000,
             peak_render_time_us / 1000, render_time_us * 100 / elapsed_us)
+    if health is not None:
+        log += ' | uptime: {} s | free after GC/min: {}/{} B'.format(
+            health.uptime_ms // 1000, health.free_after_gc, health.minimum_free_after_gc)
     print(log)
 
 
@@ -303,7 +316,7 @@ def free_memory():
 
     print('Memory usage [prev/now] => Total: [{0}]  Free: [{1}|{2}] ({3}|{4})'.format(b_T, b_F, F, b_P, P))
 
-# Setup actual time from NTP server and overclocking
+# Set up the CPU frequency and synchronize the RTC using NTP.
 try:
     init.run()
 except RuntimeError:
@@ -316,45 +329,79 @@ current_module = create_module(*modules[selected_module])
 delay_ms = 0.0
 DEBUG_STATS = True
 STATS_INTERVAL_US = 5000000
+# Opt in to unattended recovery: 8000 ms on RP2040 (maximum 8388 ms).
+# Once enabled, the watchdog also resets the board after stopping at the REPL.
+WATCHDOG_TIMEOUT_MS = 0
 counter = 0
 render_time_us = peak_render_time_us = 0
 start_time = 0
 
 def run():
     global counter, render_time_us, peak_render_time_us, delay_ms, clock_module
+    global health, watchdog, run_stage
+    health = None
+    watchdog = None
+    if not SIMULATOR:
+        health = RuntimeHealth()
+        if WATCHDOG_TIMEOUT_MS:
+            watchdog = machine.WDT(timeout=WATCHDOG_TIMEOUT_MS)
     print_system_info()
     print_log()
     reset_stats()
     while True:
+        run_stage = 'controls'
         handle_buttons()
         if DEBUG_STATS:
             render_started = stats_ticks_us()
+        run_stage = 'animation'
         is_full_frame, delay_ms, changes = current_module.get()
+        run_stage = 'render'
         changed = display.apply(is_full_frame, changes, intense)
         # Drop output references before a later module switch and its allocation.
         changes = None
 
         if mode == 2 and modules[selected_module][1] != 'Clock':
+            run_stage = 'clock overlay'
             if clock_module is None:
                 clock_module = create_module('animations.mod_clock', 'Clock', xres, yres)
             _, _, clock_frame = clock_module.get()
             display.show_overlay(clock_frame, intense)
             clock_frame = None
         elif changed:
+            run_stage = 'LED output'
             frame.write()
         if DEBUG_STATS:
             duration = stats_ticks_diff(stats_ticks_us(), render_started)
             counter += 1
             render_time_us += duration
             peak_render_time_us = max(peak_render_time_us, duration)
+        if watchdog is not None:
+            watchdog.feed()
+        run_stage = 'sleep'
         time.sleep(delay_ms)
+        if health is not None:
+            run_stage = 'memory maintenance'
+            health.poll()
 
         if DEBUG_STATS:
             elapsed = stats_ticks_diff(stats_ticks_us(), start_time)
             if elapsed >= STATS_INTERVAL_US:
+                run_stage = 'diagnostics'
                 print_log(elapsed)
                 reset_stats()
 
 
 if __name__ == '__main__':
-    run()
+    try:
+        run()
+    except Exception as error:
+        gc.collect()
+        try:
+            context = 'module={} mode={} stage={} uptime_ms={} free={}'.format(
+                modules[selected_module][1], mode, run_stage,
+                health.uptime_ms if health is not None else 0, gc.mem_free())
+            if save_failure(error, context):
+                print('Failure details saved to clockpit-crash.log')
+        except Exception:
+            pass
+        raise

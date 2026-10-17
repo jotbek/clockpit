@@ -13,6 +13,8 @@ import types
 SPEED_OPTIONS = (0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 0.8, 1.0, 1.5, 2.0,
                  3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 20.0, 50.0)
 TICK_PERIOD = 1 << 30
+# Firmware stubs replace process-wide modules and the global GC state.
+_ACTIVE_RUNTIME = threading.Lock()
 
 
 class SimulatorStopped(BaseException):
@@ -29,7 +31,7 @@ class SimulatorRuntime:
         self.error = None
         self.worker = None
         self.app = None
-        self.module_count = 14
+        self.module_count = 15
         self.commands = deque()
         self.serial = 0
         self.acknowledged = 0
@@ -42,6 +44,7 @@ class SimulatorRuntime:
         self.frame_count = 0
         self.saved_modules = {}
         self.gc_was_enabled = None
+        self.owns_runtime = False
 
     def _virtual_now(self):
         return self.elapsed + (time.monotonic() - self.anchor) * self.speed
@@ -281,31 +284,41 @@ class SimulatorRuntime:
             raise RuntimeError('Simulator runtime has already been started')
         if threading.current_thread() is not threading.main_thread():
             raise RuntimeError('Start the simulator from the GUI thread')
-        gc.collect()
-        self.gc_was_enabled = gc.isenabled()
-        gc.disable()
-        self.worker = threading.Thread(target=self._run, name='clockpit-worker', daemon=True)
-        self.worker.start()
-        if not self.ready.wait(timeout):
+        if not _ACTIVE_RUNTIME.acquire(blocking=False):
+            raise RuntimeError('Only one simulator runtime can own firmware stubs at a time')
+        self.owns_runtime = True
+        try:
+            gc.collect()
+            self.gc_was_enabled = gc.isenabled()
+            gc.disable()
+            self.worker = threading.Thread(target=self._run, name='clockpit-worker', daemon=True)
+            self.worker.start()
+            if not self.ready.wait(timeout):
+                raise RuntimeError('Simulator initialization timed out')
+            if self.error:
+                raise RuntimeError(self.error)
+        except BaseException:
             self.stop()
-            raise RuntimeError('Simulator initialization timed out')
-        if self.error:
-            self.stop()
-            raise RuntimeError(self.error)
+            raise
         return self
 
     def stop(self, timeout=2.0):
         with self.condition:
             self.stopped = True
             self.condition.notify_all()
-        if self.worker is not None and self.worker is not threading.current_thread():
+        if self.worker is threading.current_thread():
+            return False
+        if self.worker is not None and self.worker.ident is not None:
             self.worker.join(timeout)
-            stopped = not self.worker.is_alive()
-            if stopped and self.gc_was_enabled is not None:
-                if self.gc_was_enabled:
-                    gc.enable()
-                self.gc_was_enabled = None
-            return stopped
+            if self.worker.is_alive():
+                return False
+        if self.gc_was_enabled is not None:
+            if self.gc_was_enabled:
+                gc.enable()
+            self.gc_was_enabled = None
+        if self.owns_runtime:
+            self.owns_runtime = False
+            _ACTIVE_RUNTIME.release()
         return True
 
     def collect_garbage(self):
